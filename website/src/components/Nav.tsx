@@ -6,12 +6,12 @@ export function Nav() {
   return (
     <nav class="nav">
       <div class="nav-inner">
-        <Link href="/" class="nav-brand">pgmgo</Link>
+        <Link to="/" class="nav-brand">pgmgo</Link>
         <div class="nav-links">
-          <Link href="/" class={pathname === "/" ? "active" : ""}>Home</Link>
-          <Link href="/docs" class={pathname === "/docs" ? "active" : ""}>Docs</Link>
-          <Link href="/cli" class={pathname === "/cli" ? "active" : ""}>CLI</Link>
-          <Link href="/api" class={pathname === "/api" ? "active" : ""}>API</Link>
+          <Link to="/" class={pathname === "/" ? "active" : ""}>Home</Link>
+          <Link to="/docs" class={pathname === "/docs" ? "active" : ""}>Docs</Link>
+          <Link to="/cli" class={pathname === "/cli" ? "active" : ""}>CLI</Link>
+          <Link to="/api" class={pathname === "/api" ? "active" : ""}>API</Link>
         </div>
       </div>
     </nav>
