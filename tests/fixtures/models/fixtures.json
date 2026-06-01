@@ -3,8 +3,43 @@
   "pgmpy_version": "1.1.2",
   "test_cases": [
     {
-      "name": "bayesian_network_structure",
       "description": "Create BN with edges and verify structure",
+      "expected": {
+        "children": {
+          "Rain": [
+            "WetGrass"
+          ],
+          "Sprinkler": [
+            "WetGrass"
+          ],
+          "WetGrass": []
+        },
+        "edges": [
+          [
+            "Rain",
+            "WetGrass"
+          ],
+          [
+            "Sprinkler",
+            "WetGrass"
+          ]
+        ],
+        "nodes": [
+          "Rain",
+          "Sprinkler",
+          "WetGrass"
+        ],
+        "num_edges": 2,
+        "num_nodes": 3,
+        "parents": {
+          "Rain": [],
+          "Sprinkler": [],
+          "WetGrass": [
+            "Rain",
+            "Sprinkler"
+          ]
+        }
+      },
       "input": {
         "edges": [
           [
@@ -17,68 +52,24 @@
           ]
         ]
       },
-      "expected": {
-        "nodes": [
-          "Rain",
-          "Sprinkler",
-          "WetGrass"
-        ],
-        "edges": [
-          [
-            "Rain",
-            "WetGrass"
-          ],
-          [
-            "Sprinkler",
-            "WetGrass"
-          ]
-        ],
-        "num_nodes": 3,
-        "num_edges": 2,
-        "parents": {
-          "Rain": [],
-          "Sprinkler": [],
-          "WetGrass": [
-            "Rain",
-            "Sprinkler"
-          ]
-        },
-        "children": {
-          "Rain": [
-            "WetGrass"
-          ],
-          "Sprinkler": [
-            "WetGrass"
-          ],
-          "WetGrass": []
-        }
-      }
+      "name": "bayesian_network_structure"
     },
     {
-      "name": "bayesian_network_cpds",
       "description": "Create student BN with CPDs and validate",
-      "input": {
-        "edges": [
-          [
-            "D",
-            "G"
-          ],
-          [
-            "I",
-            "G"
-          ],
-          [
-            "G",
-            "L"
-          ],
-          [
-            "I",
-            "S"
-          ]
+      "expected": {
+        "is_valid": true,
+        "nodes": [
+          "D",
+          "G",
+          "I",
+          "L",
+          "S"
         ],
+        "num_cpds": 5
+      },
+      "input": {
         "cpds": {
           "D": {
-            "variable_card": 2,
             "values": [
               [
                 0.6
@@ -86,21 +77,18 @@
               [
                 0.4
               ]
-            ]
-          },
-          "I": {
-            "variable_card": 2,
-            "values": [
-              [
-                0.7
-              ],
-              [
-                0.3
-              ]
-            ]
+            ],
+            "variable_card": 2
           },
           "G": {
-            "variable_card": 3,
+            "evidence": [
+              "D",
+              "I"
+            ],
+            "evidence_card": [
+              2,
+              2
+            ],
             "values": [
               [
                 0.3,
@@ -121,17 +109,26 @@
                 0.2
               ]
             ],
-            "evidence": [
-              "D",
-              "I"
+            "variable_card": 3
+          },
+          "I": {
+            "values": [
+              [
+                0.7
+              ],
+              [
+                0.3
+              ]
             ],
-            "evidence_card": [
-              2,
-              2
-            ]
+            "variable_card": 2
           },
           "L": {
-            "variable_card": 2,
+            "evidence": [
+              "G"
+            ],
+            "evidence_card": [
+              3
+            ],
             "values": [
               [
                 0.1,
@@ -144,15 +141,15 @@
                 0.01
               ]
             ],
-            "evidence": [
-              "G"
-            ],
-            "evidence_card": [
-              3
-            ]
+            "variable_card": 2
           },
           "S": {
-            "variable_card": 2,
+            "evidence": [
+              "I"
+            ],
+            "evidence_card": [
+              2
+            ],
             "values": [
               [
                 0.95,
@@ -163,42 +160,32 @@
                 0.8
               ]
             ],
-            "evidence": [
-              "I"
-            ],
-            "evidence_card": [
-              2
-            ]
+            "variable_card": 2
           }
-        }
-      },
-      "expected": {
-        "is_valid": true,
-        "nodes": [
-          "D",
-          "G",
-          "I",
-          "L",
-          "S"
-        ],
-        "num_cpds": 5
-      }
-    },
-    {
-      "name": "bayesian_network_independencies",
-      "description": "Get independencies from a chain X->Y->Z",
-      "input": {
+        },
         "edges": [
           [
-            "X",
-            "Y"
+            "D",
+            "G"
           ],
           [
-            "Y",
-            "Z"
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
           ]
         ]
       },
+      "name": "bayesian_network_cpds"
+    },
+    {
+      "description": "Get independencies from a chain X->Y->Z",
       "expected": {
         "independencies": [
           {
@@ -213,7 +200,20 @@
             ]
           }
         ]
-      }
+      },
+      "input": {
+        "edges": [
+          [
+            "X",
+            "Y"
+          ],
+          [
+            "Y",
+            "Z"
+          ]
+        ]
+      },
+      "name": "bayesian_network_independencies"
     }
   ]
 }

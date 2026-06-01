@@ -62,7 +62,7 @@ def write_fixture(data: dict, output_dir: Path, package_name: str) -> Path:
     pkg_dir.mkdir(parents=True, exist_ok=True)
     output_file = pkg_dir / "fixtures.json"
     with open(output_file, "w") as f:
-        json.dump(data, f, indent=2, default=str)
+        json.dump(data, f, indent=2, sort_keys=True, default=str)
     return output_file
 
 

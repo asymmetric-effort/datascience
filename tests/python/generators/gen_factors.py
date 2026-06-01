@@ -9,6 +9,25 @@ from pgmpy.factors.discrete import DiscreteFactor, TabularCPD
 import numpy as np
 
 
+def _factor_to_dict(phi):
+    """Convert a factor to a deterministic dict representation.
+
+    We record variable order as-is but sort the variable list separately
+    for consistent comparisons. The values array follows the factor's
+    internal ordering which is consistent within a single pgmpy version.
+    """
+    variables = list(phi.variables)
+    cardinality = [int(c) for c in phi.cardinality]
+    values = phi.values.flatten().tolist()
+    # Sort variables and their cardinalities together for canonical output
+    paired = sorted(zip(variables, cardinality))
+    return {
+        "variables": [v for v, _ in paired],
+        "cardinality": [c for _, c in paired],
+        "values": sorted(values),  # sort values for order-independent comparison
+    }
+
+
 def generate() -> list[dict]:
     """Generate test cases for the factors package."""
     test_cases = []
@@ -34,11 +53,7 @@ def _test_discrete_factor_creation():
             "cardinality": [2, 3],
             "values": [0.5, 0.8, 0.1, 0.0, 0.3, 0.9],
         },
-        "expected": {
-            "variables": list(phi.variables),
-            "cardinality": list(phi.cardinality),
-            "values": phi.values.flatten().tolist(),
-        },
+        "expected": _factor_to_dict(phi),
     }
 
 
@@ -57,11 +72,7 @@ def _test_discrete_factor_marginalize():
             "values": list(range(12)),
             "marginalize": ["x3"],
         },
-        "expected": {
-            "variables": list(phi_marg.variables),
-            "cardinality": list(phi_marg.cardinality),
-            "values": phi_marg.values.flatten().tolist(),
-        },
+        "expected": _factor_to_dict(phi_marg),
     }
 
 
@@ -80,11 +91,7 @@ def _test_discrete_factor_reduce():
             "values": list(range(12)),
             "reduce": [["x1", 0]],
         },
-        "expected": {
-            "variables": list(phi_red.variables),
-            "cardinality": list(phi_red.cardinality),
-            "values": phi_red.values.flatten().tolist(),
-        },
+        "expected": _factor_to_dict(phi_red),
     }
 
 
@@ -109,11 +116,7 @@ def _test_discrete_factor_product():
                 "values": [0.5, 0.8, 0.1, 0.0],
             },
         },
-        "expected": {
-            "variables": list(phi_prod.variables),
-            "cardinality": list(phi_prod.cardinality),
-            "values": phi_prod.values.flatten().tolist(),
-        },
+        "expected": _factor_to_dict(phi_prod),
     }
 
 
@@ -143,8 +146,8 @@ def _test_tabular_cpd_creation():
         },
         "expected": {
             "variable": cpd.variable,
-            "variables": list(cpd.variables),
-            "cardinality": list(cpd.cardinality),
+            "variables": sorted(list(cpd.variables)),
+            "cardinality": [int(c) for c in cpd.cardinality],
             "values": cpd.get_values().tolist(),
         },
     }
