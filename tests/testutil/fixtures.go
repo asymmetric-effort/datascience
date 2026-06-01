@@ -14,7 +14,6 @@ import (
 type FixtureFile struct {
 	Generator    string     `json:"generator"`
 	PgmpyVersion string     `json:"pgmpy_version"`
-	GeneratedAt  string     `json:"generated_at"`
 	TestCases    []TestCase `json:"test_cases"`
 }
 

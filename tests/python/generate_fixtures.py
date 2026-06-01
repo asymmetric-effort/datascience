@@ -14,7 +14,6 @@ Fixture format (JSON):
     {
         "generator": "models.bayesian_network",
         "pgmpy_version": "1.1.2",
-        "generated_at": "2026-06-01T00:00:00Z",
         "test_cases": [
             {
                 "name": "test_add_node",
@@ -30,7 +29,6 @@ import importlib
 import json
 import os
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pgmpy
@@ -54,7 +52,6 @@ def run_generator(module_name: str, package_name: str) -> dict:
     return {
         "generator": package_name,
         "pgmpy_version": pgmpy.__version__,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
         "test_cases": test_cases,
     }
 

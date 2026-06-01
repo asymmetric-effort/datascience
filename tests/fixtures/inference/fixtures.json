@@ -1,7 +1,6 @@
 {
   "generator": "inference",
   "pgmpy_version": "1.1.2",
-  "generated_at": "2026-06-01T22:01:38.739604+00:00",
   "test_cases": [
     {
       "name": "variable_elimination_query",

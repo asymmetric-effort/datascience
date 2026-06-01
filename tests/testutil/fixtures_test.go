@@ -44,9 +44,6 @@ func TestLoadFixtures_ModelsFixtures(t *testing.T) {
 	if ff.PgmpyVersion == "" {
 		t.Error("expected non-empty pgmpy_version")
 	}
-	if ff.GeneratedAt == "" {
-		t.Error("expected non-empty generated_at")
-	}
 	if len(ff.TestCases) == 0 {
 		t.Fatal("expected at least one test case")
 	}
@@ -227,7 +224,6 @@ func TestFixtureFileRoundTrip(t *testing.T) {
 	ff := FixtureFile{
 		Generator:    "test_pkg",
 		PgmpyVersion: "1.1.2",
-		GeneratedAt:  "2026-06-01T00:00:00Z",
 		TestCases: []TestCase{
 			{
 				Name:        "example_a",
