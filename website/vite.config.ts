@@ -7,11 +7,6 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
   },
-  resolve: {
-    alias: {
-      "@": "/src",
-    },
-  },
   esbuild: {
     jsxFactory: "createElement",
     jsxFragment: "Fragment",
