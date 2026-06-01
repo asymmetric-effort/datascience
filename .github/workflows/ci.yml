@@ -1,0 +1,207 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Stage 1: Lint and Test (must pass before anything else)
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Go format check
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Files not formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Go unit tests
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Go coverage check
+        run: |
+          total=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${total}%"
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: TypeScript type check
+        working-directory: website
+        run: npx tsc --noEmit
+
+  # Stage 2a: Build Go project (parallel with website build)
+  build-go:
+    name: Build Go
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build all commands
+        run: |
+          for cmd in cmd/*/; do
+            name=$(basename "$cmd")
+            echo "Building $name..."
+            go build -o "bin/$name" "./$cmd"
+          done
+
+      - name: Upload Go artifacts
+        uses: actions/upload-artifact@ea165f8d65b6db9b8a1f7c0b7eb0c2b6c0a6f2d0 # v4.6.2
+        with:
+          name: go-binaries
+          path: bin/
+
+  # Stage 2b: Build website (parallel with Go build)
+  build-website:
+    name: Build Website
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build website
+        working-directory: website
+        run: npx vite build
+
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: website/dist
+
+  # Stage 3a: Deploy website to GitHub Pages (main branch only)
+  deploy-website:
+    name: Deploy Website
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build-go, build-website]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac553fd0d31 # v4.0.5
+
+  # Stage 3b: Post-deployment verification
+  verify:
+    name: Post-Deployment Verification
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-website
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+
+      - name: Download Go binaries
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: go-binaries
+          path: bin/
+
+      - name: Verify Go binaries execute
+        run: |
+          chmod +x bin/*
+          for bin in bin/*; do
+            name=$(basename "$bin")
+            echo "Verifying $name..."
+            "./$bin" version
+          done
+
+      - name: Verify Go library installs
+        run: |
+          cd $(mktemp -d)
+          go mod init verify-pgmgo
+          go get github.com/asymmetric-effort/pgmgo@${{ github.sha }}
+          echo "Go library installs successfully"
+
+      - name: Wait for deployment propagation
+        run: sleep 30
+
+      - name: Verify website is live
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://pgmgo.asymmetric-effort.com/)
+          echo "HTTP status: $status"
+          if [ "$status" -ne 200 ]; then
+            echo "Website returned non-200 status"
+            exit 1
+          fi
+
+      - name: Verify website content
+        run: |
+          body=$(curl -s https://pgmgo.asymmetric-effort.com/)
+          echo "$body" | grep -q "pgmgo" || { echo "Missing pgmgo title"; exit 1; }
+          echo "$body" | grep -q "Probabilistic Graphical Models" || { echo "Missing description"; exit 1; }
+          echo "$body" | grep -q '<div id="root">' || { echo "Missing root element"; exit 1; }
+          echo "Website content verified"
+
+      - name: Verify CNAME
+        run: |
+          body=$(curl -s https://pgmgo.asymmetric-effort.com/CNAME)
+          echo "$body" | grep -q "pgmgo.asymmetric-effort.com" || { echo "CNAME mismatch"; exit 1; }
+          echo "CNAME verified"
+
+      - name: Verify robots.txt
+        run: |
+          body=$(curl -s https://pgmgo.asymmetric-effort.com/robots.txt)
+          echo "$body" | grep -q "Sitemap:" || { echo "Missing sitemap in robots.txt"; exit 1; }
+          echo "robots.txt verified"
+
+      - name: Verify sitemap.xml
+        run: |
+          body=$(curl -s https://pgmgo.asymmetric-effort.com/sitemap.xml)
+          echo "$body" | grep -q "pgmgo.asymmetric-effort.com" || { echo "Sitemap missing URLs"; exit 1; }
+          echo "sitemap.xml verified"

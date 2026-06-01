@@ -1,0 +1,20 @@
+{
+  "name": "pgmgo-website",
+  "version": "0.0.0",
+  "description": "pgmgo project website",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "author": "Asymmetric Effort, LLC",
+  "license": "MIT",
+  "dependencies": {
+    "@asymmetric-effort/specifyjs": "^0.2.140"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}
