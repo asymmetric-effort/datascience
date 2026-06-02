@@ -1,0 +1,174 @@
+{
+  "generator": "markov_network",
+  "pgmpy_version": "1.1.2",
+  "test_cases": [
+    {
+      "description": "3-node triangle MRF (A-B-C) with pairwise factors",
+      "expected": {
+        "edges": [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "A",
+            "C"
+          ],
+          [
+            "B",
+            "C"
+          ]
+        ],
+        "is_valid": true,
+        "nodes": [
+          "A",
+          "B",
+          "C"
+        ],
+        "num_edges": 3,
+        "num_factors": 3,
+        "num_nodes": 3,
+        "partition_function": 366.0
+      },
+      "input": {
+        "edges": [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "B",
+            "C"
+          ],
+          [
+            "A",
+            "C"
+          ]
+        ],
+        "factors": [
+          {
+            "cardinality": [
+              2,
+              2
+            ],
+            "values": [
+              10.0,
+              1.0,
+              1.0,
+              10.0
+            ],
+            "variables": [
+              "A",
+              "B"
+            ]
+          },
+          {
+            "cardinality": [
+              2,
+              2
+            ],
+            "values": [
+              5.0,
+              1.0,
+              1.0,
+              5.0
+            ],
+            "variables": [
+              "B",
+              "C"
+            ]
+          },
+          {
+            "cardinality": [
+              2,
+              2
+            ],
+            "values": [
+              3.0,
+              2.0,
+              2.0,
+              3.0
+            ],
+            "variables": [
+              "A",
+              "C"
+            ]
+          }
+        ]
+      },
+      "name": "markov_network_triangle"
+    },
+    {
+      "description": "3-node chain MRF (X-Y-Z) with pairwise factors",
+      "expected": {
+        "edges": [
+          [
+            "X",
+            "Y"
+          ],
+          [
+            "Y",
+            "Z"
+          ]
+        ],
+        "is_valid": true,
+        "nodes": [
+          "X",
+          "Y",
+          "Z"
+        ],
+        "num_edges": 2,
+        "num_factors": 2,
+        "num_nodes": 3,
+        "partition_function": 140.0
+      },
+      "input": {
+        "edges": [
+          [
+            "X",
+            "Y"
+          ],
+          [
+            "Y",
+            "Z"
+          ]
+        ],
+        "factors": [
+          {
+            "cardinality": [
+              2,
+              2
+            ],
+            "values": [
+              8.0,
+              2.0,
+              2.0,
+              8.0
+            ],
+            "variables": [
+              "X",
+              "Y"
+            ]
+          },
+          {
+            "cardinality": [
+              2,
+              2
+            ],
+            "values": [
+              6.0,
+              1.0,
+              1.0,
+              6.0
+            ],
+            "variables": [
+              "Y",
+              "Z"
+            ]
+          }
+        ]
+      },
+      "name": "markov_network_chain"
+    }
+  ]
+}

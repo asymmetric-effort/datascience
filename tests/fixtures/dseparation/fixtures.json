@@ -1,0 +1,286 @@
+{
+  "generator": "dseparation",
+  "pgmpy_version": "1.1.2",
+  "test_cases": [
+    {
+      "description": "D _|_ I | {} (independent causes, d-separated)",
+      "expected": {
+        "d_separated": true
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "D"
+        ],
+        "y": [
+          "I"
+        ],
+        "z": []
+      },
+      "name": "dsep_D_I_given_empty"
+    },
+    {
+      "description": "D _|_ I | {G} (v-structure active, NOT d-separated)",
+      "expected": {
+        "d_separated": false
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "D"
+        ],
+        "y": [
+          "I"
+        ],
+        "z": [
+          "G"
+        ]
+      },
+      "name": "dsep_D_I_given_G"
+    },
+    {
+      "description": "D _|_ S | {} (no active trail, d-separated)",
+      "expected": {
+        "d_separated": true
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "D"
+        ],
+        "y": [
+          "S"
+        ],
+        "z": []
+      },
+      "name": "dsep_D_S_given_empty"
+    },
+    {
+      "description": "D _|_ L | {} (active trail D->G->L, NOT d-separated)",
+      "expected": {
+        "d_separated": false
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "D"
+        ],
+        "y": [
+          "L"
+        ],
+        "z": []
+      },
+      "name": "dsep_D_L_given_empty"
+    },
+    {
+      "description": "L _|_ D | {G} (G blocks path, d-separated)",
+      "expected": {
+        "d_separated": true
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "L"
+        ],
+        "y": [
+          "D"
+        ],
+        "z": [
+          "G"
+        ]
+      },
+      "name": "dsep_L_D_given_G"
+    },
+    {
+      "description": "L _|_ S | {G} (G blocks all paths, d-separated)",
+      "expected": {
+        "d_separated": true
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "L"
+        ],
+        "y": [
+          "S"
+        ],
+        "z": [
+          "G"
+        ]
+      },
+      "name": "dsep_L_S_given_G"
+    },
+    {
+      "description": "I _|_ S | {} (active trail I->S, NOT d-separated)",
+      "expected": {
+        "d_separated": false
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "I"
+        ],
+        "y": [
+          "S"
+        ],
+        "z": []
+      },
+      "name": "dsep_I_S_given_empty"
+    },
+    {
+      "description": "D _|_ S | {I} (I blocks, d-separated)",
+      "expected": {
+        "d_separated": true
+      },
+      "input": {
+        "edges": [
+          [
+            "D",
+            "G"
+          ],
+          [
+            "I",
+            "G"
+          ],
+          [
+            "G",
+            "L"
+          ],
+          [
+            "I",
+            "S"
+          ]
+        ],
+        "x": [
+          "D"
+        ],
+        "y": [
+          "S"
+        ],
+        "z": [
+          "I"
+        ]
+      },
+      "name": "dsep_D_S_given_I"
+    }
+  ]
+}

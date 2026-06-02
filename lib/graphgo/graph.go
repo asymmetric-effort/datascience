@@ -1,5 +1,7 @@
 package graphgo
 
+import "fmt"
+
 // UndirectedEdge represents an undirected edge.
 type UndirectedEdge struct {
 	A string
@@ -48,6 +50,30 @@ func (g *Graph) AddEdge(a, b string) {
 	if _, ok := g.edgeAttrs[k]; !ok {
 		g.edgeAttrs[k] = make(map[string]any)
 	}
+}
+
+// RemoveNode removes a node and all its incident edges.
+func (g *Graph) RemoveNode(node string) {
+	if _, ok := g.adj[node]; !ok {
+		return
+	}
+	for neighbor := range g.adj[node] {
+		delete(g.adj[neighbor], node)
+		delete(g.edgeAttrs, undirectedEdgeKey(node, neighbor))
+	}
+	delete(g.adj, node)
+	delete(g.nodeAttrs, node)
+}
+
+// RemoveEdge removes an undirected edge. Returns an error if it doesn't exist.
+func (g *Graph) RemoveEdge(a, b string) error {
+	if !g.HasEdge(a, b) {
+		return fmt.Errorf("graphgo: edge (%s, %s) not found", a, b)
+	}
+	delete(g.adj[a], b)
+	delete(g.adj[b], a)
+	delete(g.edgeAttrs, undirectedEdgeKey(a, b))
+	return nil
 }
 
 // HasNode returns true if the node exists.
