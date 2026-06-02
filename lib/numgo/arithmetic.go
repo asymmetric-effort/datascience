@@ -39,8 +39,9 @@ func shapeEqual(a, b []int) bool {
 }
 
 // Add returns the element-wise sum of two arrays.
+// Arrays with compatible shapes are broadcast to a common shape before the operation.
 func Add(a, b *NDArray) *NDArray {
-	return elementWise(a, b, func(x, y float64) float64 { return x + y })
+	return broadcastElementWise(a, b, func(x, y float64) float64 { return x + y })
 }
 
 // AddScalar adds a scalar to every element.
@@ -49,8 +50,9 @@ func AddScalar(a *NDArray, s float64) *NDArray {
 }
 
 // Sub returns the element-wise difference of two arrays.
+// Arrays with compatible shapes are broadcast to a common shape before the operation.
 func Sub(a, b *NDArray) *NDArray {
-	return elementWise(a, b, func(x, y float64) float64 { return x - y })
+	return broadcastElementWise(a, b, func(x, y float64) float64 { return x - y })
 }
 
 // SubScalar subtracts a scalar from every element.
@@ -59,8 +61,9 @@ func SubScalar(a *NDArray, s float64) *NDArray {
 }
 
 // Mul returns the element-wise product of two arrays.
+// Arrays with compatible shapes are broadcast to a common shape before the operation.
 func Mul(a, b *NDArray) *NDArray {
-	return elementWise(a, b, func(x, y float64) float64 { return x * y })
+	return broadcastElementWise(a, b, func(x, y float64) float64 { return x * y })
 }
 
 // MulScalar multiplies every element by a scalar.
@@ -69,8 +72,9 @@ func MulScalar(a *NDArray, s float64) *NDArray {
 }
 
 // Div returns the element-wise quotient of two arrays.
+// Arrays with compatible shapes are broadcast to a common shape before the operation.
 func Div(a, b *NDArray) *NDArray {
-	return elementWise(a, b, func(x, y float64) float64 { return x / y })
+	return broadcastElementWise(a, b, func(x, y float64) float64 { return x / y })
 }
 
 // DivScalar divides every element by a scalar.

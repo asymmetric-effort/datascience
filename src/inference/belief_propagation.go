@@ -3,6 +3,7 @@ package inference
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/asymmetric-effort/pgmgo/src/factors"
@@ -14,6 +15,38 @@ func edgeKey(i, j int) string {
 		i, j = j, i
 	}
 	return fmt.Sprintf("%d-%d", i, j)
+}
+
+// parseEdgeKey extracts the two clique indices from a separator key string.
+// It supports both the "%d-%d" format (used internally by edgeKey) and the
+// NUL-separated format produced by graphgo.BuildJunctionTree ("0\x001").
+// Returns (-1, -1) if parsing fails.
+func parseEdgeKey(k string) (int, int) {
+	// Try hyphen-separated format first.
+	var a, b int
+	if n, _ := fmt.Sscanf(k, "%d-%d", &a, &b); n == 2 {
+		return a, b
+	}
+	// Try NUL-byte separated format.
+	parts := strings.Split(k, "\x00")
+	if len(parts) == 2 {
+		a, errA := strconv.Atoi(parts[0])
+		b, errB := strconv.Atoi(parts[1])
+		if errA == nil && errB == nil {
+			return a, b
+		}
+	}
+	return -1, -1
+}
+
+// normalizeEdgeKey converts a separator key from any supported format to the
+// canonical edgeKey format ("%d-%d" with smaller index first).
+func normalizeEdgeKey(k string) string {
+	a, b := parseEdgeKey(k)
+	if a < 0 {
+		return k // fallback: return as-is
+	}
+	return edgeKey(a, b)
 }
 
 // BeliefPropagation performs exact inference on a junction tree using the
@@ -68,12 +101,14 @@ func NewBeliefPropagation(
 		copy(cliqueCopy[i], c)
 	}
 
-	// Deep-copy separators.
+	// Deep-copy separators, normalizing keys to edgeKey format ("%d-%d").
+	// Incoming keys may use different delimiters (e.g. NUL byte from graphgo).
 	sepCopy := make(map[string][]string, len(separators))
 	for k, v := range separators {
 		s := make([]string, len(v))
 		copy(s, v)
-		sepCopy[k] = s
+		normalizedKey := normalizeEdgeKey(k)
+		sepCopy[normalizedKey] = s
 	}
 
 	// Deep-copy factors.
@@ -89,10 +124,11 @@ func NewBeliefPropagation(
 	// Build neighbor lists from separator keys.
 	neighbors := make([][]int, len(cliques))
 	for k := range separators {
-		var a, b int
-		fmt.Sscanf(k, "%d-%d", &a, &b)
-		neighbors[a] = append(neighbors[a], b)
-		neighbors[b] = append(neighbors[b], a)
+		a, b := parseEdgeKey(k)
+		if a >= 0 && b >= 0 && a < len(cliques) && b < len(cliques) {
+			neighbors[a] = append(neighbors[a], b)
+			neighbors[b] = append(neighbors[b], a)
+		}
 	}
 
 	// Build cardinality map from all factors.

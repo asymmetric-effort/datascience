@@ -267,3 +267,74 @@ func TestCrossval_BeliefPropagationQuery(t *testing.T) {
 		}
 	}
 }
+
+// bpQueryFromFixture is a helper that runs a BP crossval test from the
+// dedicated belief_propagation/fixtures.json file.
+func bpQueryFromFixture(t *testing.T, fixtureName string) {
+	t.Helper()
+	ff := testutil.LoadFixtures(t, "belief_propagation/fixtures.json")
+	tc := ff.FindTestCase(t, fixtureName)
+
+	var input struct {
+		Edges          [][]string     `json:"edges"`
+		QueryVariables []string       `json:"query_variables"`
+		Evidence       map[string]int `json:"evidence"`
+		CPDs           map[string]struct {
+			VariableCard int         `json:"variable_card"`
+			Values       [][]float64 `json:"values"`
+			Evidence     []string    `json:"evidence"`
+			EvidenceCard []int       `json:"evidence_card"`
+		} `json:"cpds"`
+	}
+	tc.UnmarshalInput(t, &input)
+
+	var expected struct {
+		Variables []string  `json:"variables"`
+		Values    []float64 `json:"values"`
+	}
+	tc.UnmarshalExpected(t, &expected)
+
+	bn := buildStudentBN(t, input.Edges, input.CPDs)
+	jt, err := models.NewJunctionTreeFromBN(bn)
+	if err != nil {
+		t.Fatalf("NewJunctionTreeFromBN failed: %v", err)
+	}
+
+	cliques := jt.Cliques()
+	separators := jt.SeparatorSets()
+	cliqueFactors := make(map[int][]*factors.DiscreteFactor, len(cliques))
+	for i, c := range cliques {
+		fs := jt.GetCliqueFactors(c)
+		if len(fs) > 0 {
+			cliqueFactors[i] = fs
+		}
+	}
+
+	bp := inference.NewBeliefPropagation(cliques, separators, cliqueFactors)
+	if err := bp.Calibrate(); err != nil {
+		t.Fatalf("Calibrate failed: %v", err)
+	}
+
+	result, err := bp.Query(input.QueryVariables, input.Evidence)
+	if err != nil {
+		t.Fatalf("BP Query failed: %v", err)
+	}
+
+	gotValues := result.Values().Data()
+	if len(gotValues) != len(expected.Values) {
+		t.Fatalf("result values length: expected %d, got %d", len(expected.Values), len(gotValues))
+	}
+	for i := range expected.Values {
+		if math.Abs(gotValues[i]-expected.Values[i]) > 1e-4 {
+			t.Errorf("values[%d]: expected %f, got %f", i, expected.Values[i], gotValues[i])
+		}
+	}
+}
+
+func TestCrossval_BeliefPropagationFixture_QueryG(t *testing.T) {
+	bpQueryFromFixture(t, "belief_propagation_query_g")
+}
+
+func TestCrossval_BeliefPropagationFixture_QueryL(t *testing.T) {
+	bpQueryFromFixture(t, "belief_propagation_query_l")
+}
