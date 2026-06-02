@@ -96,7 +96,7 @@ def _test_variable_elimination_query():
             "evidence": {"D": 0, "I": 1},
         },
         "expected": {
-            "variables": list(result.variables),
+            "variables": sorted(list(result.variables)),
             "values": result.values.flatten().tolist(),
         },
     }
