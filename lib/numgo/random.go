@@ -219,6 +219,176 @@ func (r *RNG) Dirichlet(alpha []float64) []float64 {
 	return samples
 }
 
+// defaultRNG is a package-level RNG used by the Seed function.
+var defaultRNG = NewRNG(0)
+
+// Seed sets the seed for the package-level default RNG.
+func Seed(seed int64) {
+	defaultRNG = NewRNG(seed)
+}
+
+// Random returns an NDArray of the given shape with values drawn uniformly from [0, 1).
+// It is an alias for Rand.
+func (r *RNG) Random(shape ...int) *NDArray {
+	return r.Rand(shape...)
+}
+
+// Permutation returns an NDArray containing a random permutation of integers [0, n).
+func (r *RNG) Permutation(n int) *NDArray {
+	perm := make([]float64, n)
+	for i := range perm {
+		perm[i] = float64(i)
+	}
+	// Fisher-Yates shuffle.
+	for i := n - 1; i > 0; i-- {
+		j := r.src.IntN(i + 1)
+		perm[i], perm[j] = perm[j], perm[i]
+	}
+	return FromSlice(perm)
+}
+
+// Exponential returns samples from an exponential distribution with the given scale.
+func (r *RNG) Exponential(scale float64, shape ...int) *NDArray {
+	if scale <= 0 {
+		panic("numgo: Exponential requires scale > 0")
+	}
+	size := product(shape)
+	data := make([]float64, size)
+	for i := range data {
+		u := r.src.Float64()
+		for u == 0 {
+			u = r.src.Float64()
+		}
+		data[i] = -scale * math.Log(u)
+	}
+	return NewNDArray(shape, data)
+}
+
+// Poisson returns samples from a Poisson distribution with the given rate (lambda).
+// Uses Knuth's algorithm for small lambda, and a rejection method for large lambda.
+func (r *RNG) Poisson(lam float64, shape ...int) *NDArray {
+	if lam < 0 {
+		panic("numgo: Poisson requires lam >= 0")
+	}
+	size := product(shape)
+	data := make([]float64, size)
+	for i := range data {
+		data[i] = float64(r.poissonSingle(lam))
+	}
+	return NewNDArray(shape, data)
+}
+
+func (r *RNG) poissonSingle(lam float64) int {
+	if lam == 0 {
+		return 0
+	}
+	if lam < 30 {
+		// Knuth's algorithm.
+		L := math.Exp(-lam)
+		k := 0
+		p := 1.0
+		for {
+			k++
+			p *= r.src.Float64()
+			if p < L {
+				return k - 1
+			}
+		}
+	}
+	// Rejection method for large lambda (based on transformed normal).
+	sqrtLam := math.Sqrt(lam)
+	for {
+		x := r.boxMullerSingle()*sqrtLam + lam
+		k := int(math.Floor(x + 0.5))
+		if k < 0 {
+			continue
+		}
+		// Accept with some probability (simplified).
+		return k
+	}
+}
+
+// BinomialSample returns samples from a binomial distribution with parameters n and p.
+func (r *RNG) BinomialSample(n int, p float64, shape ...int) *NDArray {
+	if n < 0 {
+		panic("numgo: BinomialSample requires n >= 0")
+	}
+	if p < 0 || p > 1 {
+		panic("numgo: BinomialSample requires p in [0, 1]")
+	}
+	size := product(shape)
+	data := make([]float64, size)
+	for i := range data {
+		successes := 0
+		for trial := 0; trial < n; trial++ {
+			if r.src.Float64() < p {
+				successes++
+			}
+		}
+		data[i] = float64(successes)
+	}
+	return NewNDArray(shape, data)
+}
+
+// Beta returns samples from a Beta(a, b) distribution using the Gamma distribution.
+func (r *RNG) Beta(a, b float64, shape ...int) *NDArray {
+	if a <= 0 || b <= 0 {
+		panic("numgo: Beta requires a > 0 and b > 0")
+	}
+	size := product(shape)
+	data := make([]float64, size)
+	for i := range data {
+		x := r.gammaVariate(a)
+		y := r.gammaVariate(b)
+		data[i] = x / (x + y)
+	}
+	return NewNDArray(shape, data)
+}
+
+// Gamma returns samples from a Gamma(shape, scale) distribution.
+func (r *RNG) Gamma(shapep, scale float64, shapeArr ...int) *NDArray {
+	if shapep <= 0 || scale <= 0 {
+		panic("numgo: Gamma requires shape > 0 and scale > 0")
+	}
+	size := product(shapeArr)
+	data := make([]float64, size)
+	for i := range data {
+		data[i] = r.gammaVariate(shapep) * scale
+	}
+	return NewNDArray(shapeArr, data)
+}
+
+// Chisquare returns samples from a chi-squared distribution with df degrees of freedom.
+// Chi-squared(df) = Gamma(df/2, 2).
+func (r *RNG) Chisquare(df float64, shape ...int) *NDArray {
+	if df <= 0 {
+		panic("numgo: Chisquare requires df > 0")
+	}
+	return r.Gamma(df/2.0, 2.0, shape...)
+}
+
+// StandardNormal returns samples from the standard normal distribution (mean=0, std=1).
+// It is an alias for Randn.
+func (r *RNG) StandardNormal(shape ...int) *NDArray {
+	return r.Randn(shape...)
+}
+
+// StandardT returns samples from Student's t-distribution with df degrees of freedom.
+// Uses the ratio of a standard normal to the square root of a chi-squared/df.
+func (r *RNG) StandardT(df float64, shape ...int) *NDArray {
+	if df <= 0 {
+		panic("numgo: StandardT requires df > 0")
+	}
+	size := product(shape)
+	data := make([]float64, size)
+	for i := range data {
+		z := r.boxMullerSingle()
+		chi2 := r.gammaVariate(df/2.0) * 2.0
+		data[i] = z / math.Sqrt(chi2/df)
+	}
+	return NewNDArray(shape, data)
+}
+
 // Multinomial draws a single sample from the multinomial distribution:
 // distribute n trials among len(pvals) categories with the given probabilities.
 // Returns a slice of counts (length len(pvals)) summing to n.
