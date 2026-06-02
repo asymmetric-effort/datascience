@@ -178,6 +178,22 @@ func Remainder(x, y *NDArray) *NDArray {
 	return broadcastElementWise(x, y, math.Remainder)
 }
 
+// Divmod returns element-wise quotient and remainder of x/y with broadcasting.
+// Quotient is floor(x/y), remainder is x - quotient*y.
+func Divmod(x, y *NDArray) (quotient, remainder *NDArray) {
+	resultShape, _ := BroadcastShapes(x.shape, y.shape)
+	bx, _ := BroadcastTo(x, resultShape)
+	by, _ := BroadcastTo(y, resultShape)
+	qData := make([]float64, bx.Size())
+	rData := make([]float64, bx.Size())
+	for i := range qData {
+		q := math.Floor(bx.data[i] / by.data[i])
+		qData[i] = q
+		rData[i] = bx.data[i] - q*by.data[i]
+	}
+	return NewNDArray(resultShape, qData), NewNDArray(resultShape, rData)
+}
+
 // Clip clamps every element of a to the range [min, max].
 func Clip(a *NDArray, min, max float64) *NDArray {
 	return unaryOp(a, func(x float64) float64 {

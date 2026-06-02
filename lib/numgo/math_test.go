@@ -303,3 +303,34 @@ func TestCeil(t *testing.T) {
 	r := Ceil(a).Data()
 	assertSliceClose(t, "Ceil", r, []float64{2, -1, 0})
 }
+
+func TestDivmod(t *testing.T) {
+	x := FromSlice([]float64{7, -7, 7, -7})
+	y := FromSlice([]float64{3, 3, -3, -3})
+	q, r := Divmod(x, y)
+
+	// floor division: 7/3=2, -7/3=-3, 7/-3=-3, -7/-3=2
+	expectedQ := []float64{2, -3, -3, 2}
+	expectedR := []float64{1, 2, -2, -1}
+
+	for i := range expectedQ {
+		if q.data[i] != expectedQ[i] {
+			t.Errorf("quotient[%d]: expected %f, got %f", i, expectedQ[i], q.data[i])
+		}
+		if math.Abs(r.data[i]-expectedR[i]) > 1e-10 {
+			t.Errorf("remainder[%d]: expected %f, got %f", i, expectedR[i], r.data[i])
+		}
+	}
+}
+
+func TestDivmod_Broadcast(t *testing.T) {
+	x := NewNDArray([]int{2, 2}, []float64{10, 20, 30, 40})
+	y := FromSlice([]float64{3})
+	q, r := Divmod(x, y)
+	if q.Shape()[0] != 2 || q.Shape()[1] != 2 {
+		t.Errorf("expected shape [2,2], got %v", q.Shape())
+	}
+	if q.data[0] != 3 || r.data[0] != 1 {
+		t.Errorf("10 divmod 3: expected q=3 r=1, got q=%f r=%f", q.data[0], r.data[0])
+	}
+}
