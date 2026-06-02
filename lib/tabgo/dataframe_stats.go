@@ -259,6 +259,82 @@ func PctChange(df *DataFrame, periods int) *DataFrame {
 	return &DataFrame{columns: newCols, index: newIdx}
 }
 
+// Cummax returns a DataFrame with cumulative maximums of numeric columns.
+// Non-numeric columns are dropped.
+func Cummax(df *DataFrame) *DataFrame {
+	cols := dfNumericColumns(df)
+	nRows := df.Len()
+
+	colData := make([][]any, len(cols))
+	for i, c := range cols {
+		vals := df.Column(c).Values()
+		data := make([]any, nRows)
+		first := true
+		var max float64
+		for r := 0; r < nRows; r++ {
+			if vals[r] != nil {
+				f := toFloat64(vals[r])
+				if first || f > max {
+					max = f
+					first = false
+				}
+			}
+			if first {
+				data[r] = nil
+			} else {
+				data[r] = max
+			}
+		}
+		colData[i] = data
+	}
+
+	newCols := make([]*Series, len(cols))
+	newIdx := make(map[string]int, len(cols))
+	for i, n := range cols {
+		newCols[i] = NewSeries(n, colData[i])
+		newIdx[n] = i
+	}
+	return &DataFrame{columns: newCols, index: newIdx}
+}
+
+// Cummin returns a DataFrame with cumulative minimums of numeric columns.
+// Non-numeric columns are dropped.
+func Cummin(df *DataFrame) *DataFrame {
+	cols := dfNumericColumns(df)
+	nRows := df.Len()
+
+	colData := make([][]any, len(cols))
+	for i, c := range cols {
+		vals := df.Column(c).Values()
+		data := make([]any, nRows)
+		first := true
+		var min float64
+		for r := 0; r < nRows; r++ {
+			if vals[r] != nil {
+				f := toFloat64(vals[r])
+				if first || f < min {
+					min = f
+					first = false
+				}
+			}
+			if first {
+				data[r] = nil
+			} else {
+				data[r] = min
+			}
+		}
+		colData[i] = data
+	}
+
+	newCols := make([]*Series, len(cols))
+	newIdx := make(map[string]int, len(cols))
+	for i, n := range cols {
+		newCols[i] = NewSeries(n, colData[i])
+		newIdx[n] = i
+	}
+	return &DataFrame{columns: newCols, index: newIdx}
+}
+
 // Rank returns a DataFrame with rank values per numeric column.
 // Ties receive the average rank.
 func Rank(df *DataFrame) *DataFrame {
