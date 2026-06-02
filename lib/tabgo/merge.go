@@ -7,10 +7,13 @@ import (
 )
 
 // Merge performs a join between left and right DataFrames on the specified columns.
-// Currently only how="inner" is supported.
+// Supported values for how: "inner", "left", "right", "outer".
 func Merge(left, right *DataFrame, on []string, how string) (*DataFrame, error) {
-	if how != "inner" {
-		return nil, fmt.Errorf("tabgo: unsupported merge type %q (only \"inner\" is supported)", how)
+	switch how {
+	case "inner", "left", "right", "outer":
+		// supported
+	default:
+		return nil, fmt.Errorf("tabgo: unsupported merge type %q (supported: inner, left, right, outer)", how)
 	}
 	if len(on) == 0 {
 		return nil, errors.New("tabgo: merge requires at least one join column")
@@ -74,8 +77,21 @@ func Merge(left, right *DataFrame, on []string, how string) (*DataFrame, error) 
 		leftKeyVals[i] = left.Column(c).Values()
 	}
 
+	// Build left key index for right/outer joins.
+	leftIndex := make(map[string][]int)
+	for lr := 0; lr < left.Len(); lr++ {
+		parts := make([]string, len(on))
+		for i, vals := range leftKeyVals {
+			parts[i] = fmt.Sprintf("%v", vals[lr])
+		}
+		k := strings.Join(parts, "|")
+		leftIndex[k] = append(leftIndex[k], lr)
+	}
+
 	// Perform the join.
 	var rows [][]any
+	rightMatched := make(map[int]bool) // track matched right rows for right/outer
+
 	for lr := 0; lr < left.Len(); lr++ {
 		parts := make([]string, len(on))
 		for i, vals := range leftKeyVals {
@@ -83,10 +99,22 @@ func Merge(left, right *DataFrame, on []string, how string) (*DataFrame, error) 
 		}
 		k := strings.Join(parts, "|")
 		rightRows, ok := rightIndex[k]
-		if !ok {
+		if !ok || len(rightRows) == 0 {
+			// No match on right side.
+			if how == "left" || how == "outer" {
+				row := make([]any, len(resultNames))
+				for ci := range leftNames {
+					row[ci] = leftAllVals[ci][lr]
+				}
+				for ci := range rightExtra {
+					row[len(leftNames)+ci] = nil
+				}
+				rows = append(rows, row)
+			}
 			continue
 		}
 		for _, rr := range rightRows {
+			rightMatched[rr] = true
 			row := make([]any, len(resultNames))
 			for ci := range leftNames {
 				row[ci] = leftAllVals[ci][lr]
@@ -98,7 +126,39 @@ func Merge(left, right *DataFrame, on []string, how string) (*DataFrame, error) 
 		}
 	}
 
+	// For right/outer: add unmatched right rows.
+	if how == "right" || how == "outer" {
+		for rr := 0; rr < right.Len(); rr++ {
+			if rightMatched[rr] {
+				continue
+			}
+			row := make([]any, len(resultNames))
+			// Fill left columns with nil, except for the join columns which come from right.
+			for ci, n := range leftNames {
+				if onSet[n] {
+					row[ci] = rightKeyVals[onIndex(on, n)][rr]
+				} else {
+					row[ci] = nil
+				}
+			}
+			for ci := range rightExtra {
+				row[len(leftNames)+ci] = rightExtraVals[ci][rr]
+			}
+			rows = append(rows, row)
+		}
+	}
+
 	return NewDataFrameFromRows(resultNames, rows), nil
+}
+
+// onIndex returns the index of name in the on slice.
+func onIndex(on []string, name string) int {
+	for i, n := range on {
+		if n == name {
+			return i
+		}
+	}
+	return -1
 }
 
 // Concat vertically concatenates multiple DataFrames.

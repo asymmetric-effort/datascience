@@ -127,7 +127,7 @@ func TestMergeNoOverlap(t *testing.T) {
 
 func TestMergeUnsupportedHow(t *testing.T) {
 	df := NewDataFrameFromRows([]string{"id"}, [][]any{{1}})
-	_, err := Merge(df, df, []string{"id"}, "outer")
+	_, err := Merge(df, df, []string{"id"}, "cross")
 	if err == nil {
 		t.Fatal("expected error for unsupported merge type")
 	}
