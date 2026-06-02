@@ -135,6 +135,78 @@ func (g *GES) Estimate() (*graphgo.PDAG, error) {
 	return pdag, nil
 }
 
+// Insert adds a directed edge from u to v in the given DAG, checking that the
+// result remains a DAG. Returns the updated score delta, or an error if the
+// insertion would create a cycle or the edge already exists.
+func (g *GES) Insert(dag *graphgo.DiGraph, u, v string) (float64, error) {
+	if dag.HasEdge(u, v) || dag.HasEdge(v, u) {
+		return 0, fmt.Errorf("learning: edge between %q and %q already exists", u, v)
+	}
+
+	oldParents := sortedParents(dag, v)
+	oldScore := g.scoreFn(v, oldParents, g.data)
+
+	dag.AddEdge(u, v)
+	if !graphgo.IsDAG(dag) {
+		_ = dag.RemoveEdge(u, v)
+		return 0, fmt.Errorf("learning: inserting edge %q -> %q would create a cycle", u, v)
+	}
+
+	newParents := sortedParents(dag, v)
+	newScore := g.scoreFn(v, newParents, g.data)
+
+	return newScore - oldScore, nil
+}
+
+// Delete removes a directed edge from u to v in the given DAG. Returns the
+// score delta, or an error if the edge does not exist.
+func (g *GES) Delete(dag *graphgo.DiGraph, u, v string) (float64, error) {
+	if !dag.HasEdge(u, v) {
+		return 0, fmt.Errorf("learning: edge %q -> %q does not exist", u, v)
+	}
+
+	oldParents := sortedParents(dag, v)
+	oldScore := g.scoreFn(v, oldParents, g.data)
+
+	_ = dag.RemoveEdge(u, v)
+
+	newParents := sortedParents(dag, v)
+	newScore := g.scoreFn(v, newParents, g.data)
+
+	return newScore - oldScore, nil
+}
+
+// Turn reverses the direction of an existing edge from u to v (making it v to u)
+// in the given DAG. Returns the score delta, or an error if the reversal is not
+// possible (edge doesn't exist or reversal would create a cycle).
+func (g *GES) Turn(dag *graphgo.DiGraph, u, v string) (float64, error) {
+	if !dag.HasEdge(u, v) {
+		return 0, fmt.Errorf("learning: edge %q -> %q does not exist", u, v)
+	}
+
+	// Compute old scores for both endpoints.
+	oldParentsV := sortedParents(dag, v)
+	oldScoreV := g.scoreFn(v, oldParentsV, g.data)
+	oldParentsU := sortedParents(dag, u)
+	oldScoreU := g.scoreFn(u, oldParentsU, g.data)
+
+	_ = dag.RemoveEdge(u, v)
+	dag.AddEdge(v, u)
+
+	if !graphgo.IsDAG(dag) {
+		_ = dag.RemoveEdge(v, u)
+		dag.AddEdge(u, v)
+		return 0, fmt.Errorf("learning: turning edge %q -> %q would create a cycle", u, v)
+	}
+
+	newParentsV := sortedParents(dag, v)
+	newScoreV := g.scoreFn(v, newParentsV, g.data)
+	newParentsU := sortedParents(dag, u)
+	newScoreU := g.scoreFn(u, newParentsU, g.data)
+
+	return (newScoreV + newScoreU) - (oldScoreV + oldScoreU), nil
+}
+
 // dagToPDAG converts a DAG to its PDAG (CPDAG) representation.
 // Compelled edges (those present in every DAG of the equivalence class) remain
 // directed; reversible edges become undirected.

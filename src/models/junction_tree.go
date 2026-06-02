@@ -283,3 +283,101 @@ func labelToIndex(label string) int {
 	}
 	return n
 }
+
+// AddEdge adds an undirected edge between two cliques identified by their
+// indices. This is used to manually construct or modify junction trees.
+func (jt *JunctionTree) AddEdge(cliqueA, cliqueB int) error {
+	if cliqueA < 0 || cliqueA >= len(jt.cliques) {
+		return fmt.Errorf("models: clique index %d out of range [0, %d)", cliqueA, len(jt.cliques))
+	}
+	if cliqueB < 0 || cliqueB >= len(jt.cliques) {
+		return fmt.Errorf("models: clique index %d out of range [0, %d)", cliqueB, len(jt.cliques))
+	}
+	if cliqueA == cliqueB {
+		return fmt.Errorf("models: cannot add self-loop on clique %d", cliqueA)
+	}
+
+	labelA := fmt.Sprintf("%d", cliqueA)
+	labelB := fmt.Sprintf("%d", cliqueB)
+
+	if jt.tree.HasEdge(labelA, labelB) {
+		return fmt.Errorf("models: edge between cliques %d and %d already exists", cliqueA, cliqueB)
+	}
+
+	jt.tree.AddEdge(labelA, labelB)
+
+	// Compute separator set as intersection of the two cliques.
+	setA := make(map[string]bool, len(jt.cliques[cliqueA]))
+	for _, v := range jt.cliques[cliqueA] {
+		setA[v] = true
+	}
+	var sep []string
+	for _, v := range jt.cliques[cliqueB] {
+		if setA[v] {
+			sep = append(sep, v)
+		}
+	}
+	sort.Strings(sep)
+
+	edgeKey := fmt.Sprintf("%d-%d", cliqueA, cliqueB)
+	if cliqueA > cliqueB {
+		edgeKey = fmt.Sprintf("%d-%d", cliqueB, cliqueA)
+	}
+	jt.separators[edgeKey] = sep
+
+	return nil
+}
+
+// States returns a map from variable name to its state count, derived from
+// the factors assigned to cliques.
+func (jt *JunctionTree) States() map[string]int {
+	result := make(map[string]int)
+	for _, fs := range jt.cliqueFactors {
+		for _, f := range fs {
+			vars := f.Variables()
+			cards := f.Cardinality()
+			for i, v := range vars {
+				if _, ok := result[v]; !ok {
+					result[v] = cards[i]
+				}
+			}
+		}
+	}
+	return result
+}
+
+// Copy returns a deep copy of the JunctionTree.
+func (jt *JunctionTree) Copy() *JunctionTree {
+	// Deep copy cliques.
+	newCliques := make([][]string, len(jt.cliques))
+	for i, c := range jt.cliques {
+		cp := make([]string, len(c))
+		copy(cp, c)
+		newCliques[i] = cp
+	}
+
+	// Deep copy separators.
+	newSeps := make(map[string][]string, len(jt.separators))
+	for k, v := range jt.separators {
+		cp := make([]string, len(v))
+		copy(cp, v)
+		newSeps[k] = cp
+	}
+
+	// Deep copy clique factors.
+	newCF := make(map[int][]*factors.DiscreteFactor, len(jt.cliqueFactors))
+	for k, fs := range jt.cliqueFactors {
+		newFs := make([]*factors.DiscreteFactor, len(fs))
+		for i, f := range fs {
+			newFs[i] = f.Copy()
+		}
+		newCF[k] = newFs
+	}
+
+	return &JunctionTree{
+		cliques:       newCliques,
+		tree:          jt.tree.Copy(),
+		separators:    newSeps,
+		cliqueFactors: newCF,
+	}
+}

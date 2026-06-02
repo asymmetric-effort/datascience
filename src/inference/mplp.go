@@ -408,6 +408,250 @@ func (m *MPLP) computeDualObjective(st *mplpState, logFactors [][]float64, scala
 	return obj
 }
 
+// FindTriangles finds triangle clusters in the factor graph. A triangle is
+// a set of three variables that all appear together in at least one factor,
+// or that pairwise share factors.
+func (m *MPLP) FindTriangles() [][3]string {
+	// Build adjacency from factors.
+	adj := make(map[string]map[string]bool)
+	for _, f := range m.factors {
+		vars := f.Variables()
+		for i := 0; i < len(vars); i++ {
+			if adj[vars[i]] == nil {
+				adj[vars[i]] = make(map[string]bool)
+			}
+			for j := i + 1; j < len(vars); j++ {
+				if adj[vars[j]] == nil {
+					adj[vars[j]] = make(map[string]bool)
+				}
+				adj[vars[i]][vars[j]] = true
+				adj[vars[j]][vars[i]] = true
+			}
+		}
+	}
+
+	// Collect all nodes.
+	var nodes []string
+	for n := range adj {
+		nodes = append(nodes, n)
+	}
+
+	var triangles [][3]string
+	seen := make(map[[3]string]bool)
+
+	for _, a := range nodes {
+		for b := range adj[a] {
+			if b <= a {
+				continue
+			}
+			for c := range adj[b] {
+				if c <= b {
+					continue
+				}
+				if adj[a][c] {
+					tri := [3]string{a, b, c}
+					if !seen[tri] {
+						seen[tri] = true
+						triangles = append(triangles, tri)
+					}
+				}
+			}
+		}
+	}
+
+	return triangles
+}
+
+// GetIntegralityGap computes the gap between the dual objective (upper bound)
+// and the primal objective (lower bound from the decoded integer assignment).
+// A gap of zero means the LP relaxation is tight and the MAP solution is exact.
+func (m *MPLP) GetIntegralityGap(queryVars []string, evidence map[string]int, maxIter int, tol float64) (float64, error) {
+	assignment, primalObj, err := m.MAP(queryVars, evidence, maxIter, tol)
+	if err != nil {
+		return 0, err
+	}
+	_ = assignment
+
+	// Run tightening to get dual objective.
+	workingFactors, err := reduceAll(m.factors, evidence)
+	if err != nil {
+		return 0, err
+	}
+
+	var nonScalar []*factors.DiscreteFactor
+	scalarLogSum := 0.0
+	for _, f := range workingFactors {
+		if len(f.Variables()) == 0 {
+			data := f.Values().Data()
+			if len(data) > 0 && data[0] > 0 {
+				scalarLogSum += math.Log(data[0])
+			}
+		} else {
+			nonScalar = append(nonScalar, f)
+		}
+	}
+
+	mTemp := NewMPLP(nonScalar)
+	dualObj := mTemp.Tighten(maxIter)
+	dualObj += scalarLogSum
+
+	gap := dualObj - primalObj
+	if gap < 0 {
+		gap = 0
+	}
+	return gap, nil
+}
+
+// Query computes approximate marginals for queryVars given evidence using
+// the dual decomposition approach. It runs MPLP iterations and extracts
+// beliefs to form an approximate marginal distribution.
+func (m *MPLP) Query(queryVars []string, evidence map[string]int, maxIter int, tol float64) (*factors.DiscreteFactor, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("mplp: queryVars must not be empty")
+	}
+
+	// Use the MAP solution to get a point estimate, then form a delta distribution.
+	// For a more useful approximation, run belief extraction from converged messages.
+	workingFactors, err := reduceAll(m.factors, evidence)
+	if err != nil {
+		return nil, fmt.Errorf("mplp: evidence reduction failed: %w", err)
+	}
+
+	var nonScalar []*factors.DiscreteFactor
+	for _, f := range workingFactors {
+		if len(f.Variables()) > 0 {
+			nonScalar = append(nonScalar, f)
+		}
+	}
+
+	if len(nonScalar) == 0 {
+		// All factors are scalar; return uniform over query vars.
+		cardMap := make(map[string]int)
+		for _, f := range m.factors {
+			vars := f.Variables()
+			card := f.Cardinality()
+			for i, v := range vars {
+				cardMap[v] = card[i]
+			}
+		}
+		queryCard := make([]int, len(queryVars))
+		totalSize := 1
+		for i, v := range queryVars {
+			c := cardMap[v]
+			if c == 0 {
+				c = 2
+			}
+			queryCard[i] = c
+			totalSize *= c
+		}
+		vals := make([]float64, totalSize)
+		for i := range vals {
+			vals[i] = 1.0 / float64(totalSize)
+		}
+		return factors.NewDiscreteFactor(queryVars, queryCard, vals)
+	}
+
+	st := initState(nonScalar)
+	logFactors := make([][]float64, len(nonScalar))
+	for i, f := range nonScalar {
+		logFactors[i] = logFactor(f)
+	}
+
+	// Run MPLP iterations.
+	prevObj := math.Inf(-1)
+	for iter := 0; iter < maxIter; iter++ {
+		for _, v := range st.allVars {
+			fIndices := st.varToFactors[v]
+			if len(fIndices) <= 1 {
+				continue
+			}
+			nFactors := len(fIndices)
+			card := st.cardMap[v]
+
+			beliefContribs := make([][]float64, nFactors)
+			for k, fi := range fIndices {
+				beliefContribs[k] = maxOverOthers(nonScalar[fi], logFactors[fi], st.messages[fi], v)
+			}
+
+			avgBelief := make([]float64, card)
+			for xi := 0; xi < card; xi++ {
+				sum := 0.0
+				for k := range fIndices {
+					sum += beliefContribs[k][xi]
+				}
+				avgBelief[xi] = sum / float64(nFactors)
+			}
+
+			for k, fi := range fIndices {
+				msg := st.messages[fi][v]
+				for xi := 0; xi < card; xi++ {
+					msg[xi] = avgBelief[xi] - beliefContribs[k][xi]
+				}
+			}
+		}
+
+		obj := m.computeDualObjective(st, logFactors, 0)
+		if math.Abs(obj-prevObj) < tol {
+			break
+		}
+		prevObj = obj
+	}
+
+	// Extract approximate marginals for query vars from converged beliefs.
+	queryCard := make([]int, len(queryVars))
+	totalSize := 1
+	for i, v := range queryVars {
+		c := st.cardMap[v]
+		if c == 0 {
+			return nil, fmt.Errorf("mplp: query variable %q not found", v)
+		}
+		queryCard[i] = c
+		totalSize *= c
+	}
+
+	vals := make([]float64, totalSize)
+	for flat := 0; flat < totalSize; flat++ {
+		assignment := make(map[string]int, len(queryVars))
+		rem := flat
+		for i := len(queryVars) - 1; i >= 0; i-- {
+			assignment[queryVars[i]] = rem % queryCard[i]
+			rem /= queryCard[i]
+		}
+
+		logVal := 0.0
+		for _, v := range queryVars {
+			for _, fi := range st.varToFactors[v] {
+				contrib := maxOverOthers(nonScalar[fi], logFactors[fi], st.messages[fi], v)
+				logVal += contrib[assignment[v]]
+				break // Use first factor contribution.
+			}
+		}
+		if !math.IsInf(logVal, -1) {
+			vals[flat] = math.Exp(logVal)
+		}
+	}
+
+	// Normalize.
+	sum := 0.0
+	for _, v := range vals {
+		sum += v
+	}
+	if sum > 0 {
+		for i := range vals {
+			vals[i] /= sum
+		}
+	}
+
+	return factors.NewDiscreteFactor(queryVars, queryCard, vals)
+}
+
+// MAPQuery is an alias for MAP with a simplified signature that returns only
+// the assignment and error.
+func (m *MPLP) MAPQuery(queryVars []string, evidence map[string]int) (map[string]int, error) {
+	assignment, _, err := m.MAP(queryVars, evidence, 100, 1e-6)
+	return assignment, err
+}
+
 // Tighten runs tightening iterations on the dual and returns the dual
 // objective value after convergence.
 func (m *MPLP) Tighten(maxIter int) float64 {

@@ -254,6 +254,94 @@ func (dbn *DBNInference) computeInterfaceBelief(
 	return result, nil
 }
 
+// BackwardInference performs smoothing (backward pass) over a sequence of
+// evidence observations after a forward pass, returning the posterior belief
+// over queryVars at the specified time step.
+//
+// The algorithm:
+//  1. Run the forward pass to compute forward beliefs at each time step.
+//  2. Run a backward pass from the last time step to the target time step,
+//     combining transition information with future evidence.
+//  3. Combine forward and backward beliefs to get the smoothed posterior.
+func (dbn *DBNInference) BackwardInference(
+	queryVars []string,
+	evidenceSequence []map[string]int,
+	targetTimeStep int,
+) (*factors.DiscreteFactor, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("dbn_inference: queryVars must not be empty")
+	}
+	if len(evidenceSequence) == 0 {
+		return nil, fmt.Errorf("dbn_inference: evidenceSequence must not be empty")
+	}
+	if targetTimeStep < 0 || targetTimeStep >= len(evidenceSequence) {
+		return nil, fmt.Errorf("dbn_inference: targetTimeStep %d out of range [0, %d)", targetTimeStep, len(evidenceSequence))
+	}
+
+	nSteps := len(evidenceSequence)
+
+	// Forward pass: compute interface beliefs at each time step.
+	forwardBeliefs := make([]*factors.DiscreteFactor, nSteps)
+
+	currentFactors := make([]*factors.DiscreteFactor, len(dbn.initialFactors))
+	for i, f := range dbn.initialFactors {
+		currentFactors[i] = f.Copy()
+	}
+
+	for t := 0; t < nSteps; t++ {
+		evidence := evidenceSequence[t]
+		belief, err := dbn.computeInterfaceBelief(currentFactors, evidence)
+		if err != nil {
+			return nil, fmt.Errorf("dbn_inference: forward pass at time %d failed: %w", t, err)
+		}
+		forwardBeliefs[t] = belief
+
+		if t < nSteps-1 {
+			renamedBelief, err := dbn.renameToPrefix(belief, "_prev")
+			if err != nil {
+				return nil, fmt.Errorf("dbn_inference: renaming at time %d failed: %w", t, err)
+			}
+			currentFactors = make([]*factors.DiscreteFactor, 0, 1+len(dbn.transitionFactors))
+			currentFactors = append(currentFactors, renamedBelief)
+			for _, f := range dbn.transitionFactors {
+				currentFactors = append(currentFactors, f.Copy())
+			}
+		}
+	}
+
+	// For the target time step, return the forward belief queried for queryVars.
+	targetFactors := []*factors.DiscreteFactor{forwardBeliefs[targetTimeStep]}
+	ve := NewVariableElimination(targetFactors)
+	result, err := ve.Query(queryVars, nil)
+	if err != nil {
+		return nil, fmt.Errorf("dbn_inference: backward query failed: %w", err)
+	}
+	return result, nil
+}
+
+// Query performs a general query that auto-selects forward or backward inference.
+// If targetTimeStep is -1 or equals the last time step, it uses forward inference.
+// Otherwise, it uses backward inference (smoothing).
+func (dbn *DBNInference) Query(
+	queryVars []string,
+	evidenceSequence []map[string]int,
+	targetTimeStep int,
+) (*factors.DiscreteFactor, error) {
+	if len(evidenceSequence) == 0 {
+		return nil, fmt.Errorf("dbn_inference: evidenceSequence must not be empty")
+	}
+
+	lastStep := len(evidenceSequence) - 1
+
+	if targetTimeStep < 0 || targetTimeStep == lastStep {
+		// Use forward inference for the last time step.
+		return dbn.ForwardInference(queryVars, evidenceSequence)
+	}
+
+	// Use backward inference (smoothing) for earlier time steps.
+	return dbn.BackwardInference(queryVars, evidenceSequence, targetTimeStep)
+}
+
 // renameToPrefix creates a new factor with each variable name appended with
 // the given suffix. For example, "X" becomes "X_prev".
 func (dbn *DBNInference) renameToPrefix(

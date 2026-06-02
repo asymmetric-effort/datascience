@@ -282,3 +282,404 @@ func allDescendants(g *graphgo.DiGraph, node string) map[string]bool {
 	}
 	return desc
 }
+
+// allAncestors returns the set of all ancestors of the given node
+// (not including the node itself) using BFS.
+func allAncestors(g *graphgo.DiGraph, node string) map[string]bool {
+	return graphgo.Ancestors(g, node)
+}
+
+// GetAllBackdoorAdjustmentSets enumerates all valid backdoor adjustment sets
+// for estimating the causal effect of treatment on outcome. Only feasible
+// for small graphs.
+func (ci *CausalInference) GetAllBackdoorAdjustmentSets(treatment, outcome string) [][]string {
+	g := bnToDigraph(ci.bn)
+
+	// Candidate variables: non-descendants of treatment, excluding treatment and outcome.
+	descendants := allDescendants(g, treatment)
+	nodes := ci.bn.Nodes()
+	var candidates []string
+	for _, n := range nodes {
+		if n == treatment || n == outcome || descendants[n] {
+			continue
+		}
+		candidates = append(candidates, n)
+	}
+
+	var results [][]string
+	nCand := len(candidates)
+	for mask := 0; mask < (1 << nCand); mask++ {
+		var subset []string
+		for i := 0; i < nCand; i++ {
+			if mask&(1<<i) != 0 {
+				subset = append(subset, candidates[i])
+			}
+		}
+		if subset == nil {
+			subset = []string{}
+		}
+		if ci.IsValidBackdoor(treatment, outcome, subset) {
+			results = append(results, subset)
+		}
+	}
+	return results
+}
+
+// IsValidFrontdoorAdjustmentSet checks whether the given set satisfies the
+// front-door criterion for estimating the causal effect of treatment on outcome.
+//
+// The front-door criterion requires:
+//  1. The set intercepts all directed paths from treatment to outcome.
+//  2. No unblocked back-door path from treatment to any variable in the set.
+//  3. All back-door paths from each set variable to outcome are blocked by treatment.
+func (ci *CausalInference) IsValidFrontdoorAdjustmentSet(treatment, outcome string, frontdoorSet []string) bool {
+	if len(frontdoorSet) == 0 {
+		return false
+	}
+	g := bnToDigraph(ci.bn)
+
+	fdSet := make(map[string]bool, len(frontdoorSet))
+	for _, v := range frontdoorSet {
+		fdSet[v] = true
+	}
+
+	// Condition 1: intercepts all directed paths from treatment to outcome.
+	if !interceptsAllPaths(g, treatment, outcome, fdSet) {
+		return false
+	}
+
+	// Condition 2: no unblocked back-door path from treatment to any fd variable.
+	manipulated := g.Copy()
+	for _, child := range g.Successors(treatment) {
+		_ = manipulated.RemoveEdge(treatment, child)
+	}
+	xSet := map[string]bool{treatment: true}
+	for _, m := range frontdoorSet {
+		ySet := map[string]bool{m: true}
+		if !graphgo.DSeparation(manipulated, xSet, ySet, map[string]bool{}) {
+			return false
+		}
+	}
+
+	// Condition 3: all back-door paths from each fd variable to outcome blocked by treatment.
+	treatmentSet := map[string]bool{treatment: true}
+	for _, m := range frontdoorSet {
+		manipulatedM := g.Copy()
+		for _, child := range g.Successors(m) {
+			_ = manipulatedM.RemoveEdge(m, child)
+		}
+		mSet := map[string]bool{m: true}
+		ySet := map[string]bool{outcome: true}
+		if !graphgo.DSeparation(manipulatedM, mSet, ySet, treatmentSet) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// interceptsAllPaths checks whether every directed path from src to dst passes
+// through at least one node in the interceptSet.
+func interceptsAllPaths(g *graphgo.DiGraph, src, dst string, interceptSet map[string]bool) bool {
+	visited := make(map[string]bool)
+	var dfs func(string) bool
+	dfs = func(node string) bool {
+		if node == dst {
+			return true
+		}
+		visited[node] = true
+		for _, child := range g.Successors(node) {
+			if visited[child] {
+				continue
+			}
+			if interceptSet[child] {
+				continue
+			}
+			if dfs(child) {
+				return true
+			}
+		}
+		return false
+	}
+	visited[src] = true
+	for _, child := range g.Successors(src) {
+		if interceptSet[child] {
+			continue
+		}
+		if dfs(child) {
+			return false
+		}
+	}
+	return true
+}
+
+// GetAllFrontdoorAdjustmentSets enumerates all valid front-door adjustment sets.
+// Only feasible for small graphs.
+func (ci *CausalInference) GetAllFrontdoorAdjustmentSets(treatment, outcome string) [][]string {
+	g := bnToDigraph(ci.bn)
+
+	// Candidates are mediators: nodes on directed paths from treatment to outcome.
+	descT := allDescendants(g, treatment)
+	ancO := allAncestors(g, outcome)
+	var candidates []string
+	for _, n := range ci.bn.Nodes() {
+		if n == treatment || n == outcome {
+			continue
+		}
+		if descT[n] && ancO[n] {
+			candidates = append(candidates, n)
+		}
+	}
+
+	var results [][]string
+	nCand := len(candidates)
+	for mask := 1; mask < (1 << nCand); mask++ {
+		var subset []string
+		for i := 0; i < nCand; i++ {
+			if mask&(1<<i) != 0 {
+				subset = append(subset, candidates[i])
+			}
+		}
+		if ci.IsValidFrontdoorAdjustmentSet(treatment, outcome, subset) {
+			results = append(results, subset)
+		}
+	}
+	return results
+}
+
+// GetScalingIndicators returns variables that could serve as scaling indicators
+// for instrumental variable analysis. These are exogenous variables (roots)
+// that are not ancestors of the outcome through a backdoor path.
+func (ci *CausalInference) GetScalingIndicators(treatment, outcome string) []string {
+	g := bnToDigraph(ci.bn)
+	var indicators []string
+	for _, n := range ci.bn.Nodes() {
+		if n == treatment || n == outcome {
+			continue
+		}
+		if g.InDegree(n) == 0 {
+			indicators = append(indicators, n)
+		}
+	}
+	return indicators
+}
+
+// GetIVs finds instrumental variables for the causal effect of treatment on outcome.
+// An IV must: (1) be associated with treatment, (2) affect outcome only through
+// treatment, (3) have no common cause with outcome (d-separated from outcome
+// given treatment in the manipulated graph).
+func (ci *CausalInference) GetIVs(treatment, outcome string) []string {
+	g := bnToDigraph(ci.bn)
+	var ivs []string
+
+	for _, n := range ci.bn.Nodes() {
+		if n == treatment || n == outcome {
+			continue
+		}
+		// Condition 1: n is associated with treatment (not d-separated marginally).
+		nSet := map[string]bool{n: true}
+		tSet := map[string]bool{treatment: true}
+		if graphgo.DSeparation(g, nSet, tSet, map[string]bool{}) {
+			continue
+		}
+
+		// Condition 2: n affects outcome only through treatment.
+		// Remove treatment and check if n can still reach outcome.
+		manipulated := g.Copy()
+		manipulated.RemoveNode(treatment)
+		oSet := map[string]bool{outcome: true}
+		if !graphgo.DSeparation(manipulated, nSet, oSet, map[string]bool{}) {
+			continue
+		}
+
+		// Condition 3: d-separated from outcome given treatment in manipulated graph.
+		manipulated2 := g.Copy()
+		for _, child := range g.Successors(treatment) {
+			_ = manipulated2.RemoveEdge(treatment, child)
+		}
+		if !graphgo.DSeparation(manipulated2, nSet, oSet, tSet) {
+			continue
+		}
+
+		ivs = append(ivs, n)
+	}
+	return ivs
+}
+
+// GetConditionalIVs finds conditional instrumental variables given a conditioning set.
+func (ci *CausalInference) GetConditionalIVs(treatment, outcome string, conditioningSet []string) []string {
+	g := bnToDigraph(ci.bn)
+	condSet := make(map[string]bool, len(conditioningSet))
+	for _, v := range conditioningSet {
+		condSet[v] = true
+	}
+
+	var ivs []string
+	for _, n := range ci.bn.Nodes() {
+		if n == treatment || n == outcome || condSet[n] {
+			continue
+		}
+		nSet := map[string]bool{n: true}
+		tSet := map[string]bool{treatment: true}
+
+		// Must be associated with treatment given conditioning set.
+		if graphgo.DSeparation(g, nSet, tSet, condSet) {
+			continue
+		}
+
+		// Must be d-separated from outcome given treatment + conditioning set.
+		zSet := make(map[string]bool)
+		for k, v := range condSet {
+			zSet[k] = v
+		}
+		zSet[treatment] = true
+		oSet := map[string]bool{outcome: true}
+
+		manipulated := g.Copy()
+		for _, child := range g.Successors(treatment) {
+			_ = manipulated.RemoveEdge(treatment, child)
+		}
+		if !graphgo.DSeparation(manipulated, nSet, oSet, zSet) {
+			continue
+		}
+
+		ivs = append(ivs, n)
+	}
+	return ivs
+}
+
+// GetTotalConditionalIVs returns all conditional IVs across all possible conditioning sets.
+// Only feasible for small graphs.
+func (ci *CausalInference) GetTotalConditionalIVs(treatment, outcome string) map[string][]string {
+	result := make(map[string][]string)
+	nodes := ci.bn.Nodes()
+	var candidates []string
+	for _, n := range nodes {
+		if n != treatment && n != outcome {
+			candidates = append(candidates, n)
+		}
+	}
+
+	// For each candidate, try conditioning on subsets of others.
+	for _, iv := range candidates {
+		var others []string
+		for _, c := range candidates {
+			if c != iv {
+				others = append(others, c)
+			}
+		}
+
+		nOthers := len(others)
+		for mask := 0; mask < (1 << nOthers); mask++ {
+			var condSet []string
+			for i := 0; i < nOthers; i++ {
+				if mask&(1<<i) != 0 {
+					condSet = append(condSet, others[i])
+				}
+			}
+			civs := ci.GetConditionalIVs(treatment, outcome, condSet)
+			for _, c := range civs {
+				if c == iv {
+					key := fmt.Sprintf("%v", condSet)
+					result[iv] = append(result[iv], key)
+					break
+				}
+			}
+		}
+	}
+	return result
+}
+
+// IdentificationMethod returns which identification method applies for
+// estimating the causal effect of treatment on outcome.
+// Returns "backdoor", "frontdoor", "iv", or "none".
+func (ci *CausalInference) IdentificationMethod(treatment, outcome string) string {
+	// Check backdoor.
+	backdoorSets := ci.GetAllBackdoorAdjustmentSets(treatment, outcome)
+	if len(backdoorSets) > 0 {
+		return "backdoor"
+	}
+
+	// Check frontdoor.
+	frontdoorSets := ci.GetAllFrontdoorAdjustmentSets(treatment, outcome)
+	if len(frontdoorSets) > 0 {
+		return "frontdoor"
+	}
+
+	// Check IV.
+	ivs := ci.GetIVs(treatment, outcome)
+	if len(ivs) > 0 {
+		return "iv"
+	}
+
+	return "none"
+}
+
+// EstimateATE estimates the Average Treatment Effect from observational data
+// using the appropriate identification method (backdoor or frontdoor adjustment).
+// Uses binary treatment values [0, 1].
+func (ci *CausalInference) EstimateATE(treatment, outcome string, data *tabgo.DataFrame) (float64, error) {
+	if data == nil {
+		return 0, fmt.Errorf("inference: data must not be nil")
+	}
+
+	// Try backdoor first.
+	backdoorSets := ci.GetAllBackdoorAdjustmentSets(treatment, outcome)
+	if len(backdoorSets) > 0 {
+		// Use the first (smallest) valid adjustment set.
+		var bestSet []string
+		for _, s := range backdoorSets {
+			if bestSet == nil || len(s) < len(bestSet) {
+				bestSet = s
+			}
+		}
+		return ci.BackdoorAdjustment(treatment, outcome, bestSet, data)
+	}
+
+	// Try model-based approach using do-calculus.
+	return ci.ATE(treatment, outcome, [2]int{0, 1})
+}
+
+// GetProperBackdoorGraph returns the manipulated graph where all edges out of
+// treatment have been removed. This is the graph used for backdoor criterion checks.
+func (ci *CausalInference) GetProperBackdoorGraph(treatment string) *graphgo.DiGraph {
+	g := bnToDigraph(ci.bn)
+	manipulated := g.Copy()
+	for _, child := range g.Successors(treatment) {
+		_ = manipulated.RemoveEdge(treatment, child)
+	}
+	return manipulated
+}
+
+// IsValidAdjustmentSet checks whether the adjustment set satisfies the backdoor
+// criterion. Delegates to the IsValidBackdoor method.
+func (ci *CausalInference) IsValidAdjustmentSet(treatment, outcome string, adjustmentSet []string) bool {
+	return ci.IsValidBackdoor(treatment, outcome, adjustmentSet)
+}
+
+// GetMinimalAdjustmentSet finds a minimal valid backdoor adjustment set by
+// starting with parents of treatment and greedily removing variables.
+func (ci *CausalInference) GetMinimalAdjustmentSet(treatment, outcome string) ([]string, error) {
+	g := bnToDigraph(ci.bn)
+	parents := g.Parents(treatment)
+
+	if !ci.IsValidBackdoor(treatment, outcome, parents) {
+		return nil, fmt.Errorf("inference: parents of %s do not form a valid adjustment set", treatment)
+	}
+
+	minimal := make([]string, len(parents))
+	copy(minimal, parents)
+
+	for i := 0; i < len(minimal); {
+		candidate := make([]string, 0, len(minimal)-1)
+		candidate = append(candidate, minimal[:i]...)
+		candidate = append(candidate, minimal[i+1:]...)
+		if ci.IsValidBackdoor(treatment, outcome, candidate) {
+			minimal = candidate
+		} else {
+			i++
+		}
+	}
+
+	return minimal, nil
+}

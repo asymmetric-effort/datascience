@@ -149,6 +149,96 @@ func (gs *GibbsSampling) Sample(n int, burnIn int, thinning int, evidence map[st
 	return tabgo.NewDataFrame(colData), nil
 }
 
+// GenerateSample yields a single sample from the Gibbs sampler. It initializes
+// a state (or uses evidence as fixed values), runs burnIn iterations for mixing,
+// and returns one sample state as a map from variable name to state index.
+func (gs *GibbsSampling) GenerateSample(burnIn int, evidence map[string]int) (map[string]int, error) {
+	if burnIn < 0 {
+		return nil, fmt.Errorf("sampling: burnIn must be non-negative, got %d", burnIn)
+	}
+	if evidence == nil {
+		evidence = make(map[string]int)
+	}
+
+	nodes := gs.bn.Nodes()
+
+	// Build cardinality map from factors.
+	cardMap := make(map[string]int)
+	for _, f := range gs.factors {
+		vars := f.Variables()
+		card := f.Cardinality()
+		for i, v := range vars {
+			cardMap[v] = card[i]
+		}
+	}
+
+	// Validate evidence.
+	for v, val := range evidence {
+		card, ok := cardMap[v]
+		if !ok {
+			return nil, fmt.Errorf("sampling: evidence variable %q not found in network", v)
+		}
+		if val < 0 || val >= card {
+			return nil, fmt.Errorf("sampling: evidence value %d out of range for variable %q (cardinality %d)", val, v, card)
+		}
+	}
+
+	// Determine non-evidence variables.
+	var samplingVars []string
+	for _, node := range nodes {
+		if _, isEvidence := evidence[node]; !isEvidence {
+			samplingVars = append(samplingVars, node)
+		}
+	}
+
+	// Initialize state.
+	state := make(map[string]int, len(nodes))
+	for v, val := range evidence {
+		state[v] = val
+	}
+	for _, v := range samplingVars {
+		card := cardMap[v]
+		idx := gs.rng.RandInt(0, card, 1).Data()
+		state[v] = int(idx[0])
+	}
+
+	// Precompute relevant factors.
+	varFactors := make(map[string][]*factors.DiscreteFactor, len(samplingVars))
+	for _, v := range samplingVars {
+		for _, f := range gs.factors {
+			for _, fv := range f.Variables() {
+				if fv == v {
+					varFactors[v] = append(varFactors[v], f)
+					break
+				}
+			}
+		}
+	}
+
+	// Run burn-in.
+	for iter := 0; iter < burnIn; iter++ {
+		for _, v := range samplingVars {
+			card := cardMap[v]
+			dist := gs.computeFullConditional(v, card, state, varFactors[v])
+			state[v] = sampleCategorical(gs.rng, dist)
+		}
+	}
+
+	// One final sweep.
+	for _, v := range samplingVars {
+		card := cardMap[v]
+		dist := gs.computeFullConditional(v, card, state, varFactors[v])
+		state[v] = sampleCategorical(gs.rng, dist)
+	}
+
+	// Return a copy.
+	result := make(map[string]int, len(nodes))
+	for k, val := range state {
+		result[k] = val
+	}
+	return result, nil
+}
+
 // computeFullConditional computes the full conditional distribution of variable
 // v given the current state of all other variables. It multiplies all factors
 // containing v, reduces by the current assignments of all other variables in

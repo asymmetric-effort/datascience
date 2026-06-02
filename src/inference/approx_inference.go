@@ -172,3 +172,125 @@ func (ai *ApproxInference) Query(queryVars []string, evidence map[string]int, nS
 	// Step 5: Return as DiscreteFactor.
 	return factors.NewDiscreteFactor(queryVars, queryCard, counts)
 }
+
+// GetDistribution approximates the full joint distribution over all variables
+// using likelihood-weighted sampling with the given number of samples.
+func (ai *ApproxInference) GetDistribution(nSamples int) (*factors.DiscreteFactor, error) {
+	if nSamples <= 0 {
+		return nil, fmt.Errorf("approx_inference: nSamples must be positive")
+	}
+
+	// Collect all variables and cardinalities.
+	var allVars []string
+	cardMap := make(map[string]int)
+	for _, f := range ai.factors {
+		vars := f.Variables()
+		card := f.Cardinality()
+		for i, v := range vars {
+			if _, ok := cardMap[v]; !ok {
+				cardMap[v] = card[i]
+				allVars = append(allVars, v)
+			}
+		}
+	}
+
+	allCard := make([]int, len(allVars))
+	for i, v := range allVars {
+		allCard[i] = cardMap[v]
+	}
+
+	// Compute total size.
+	totalSize := 1
+	for _, c := range allCard {
+		totalSize *= c
+	}
+	counts := make([]float64, totalSize)
+
+	// Sample.
+	assignment := make(map[string]int, len(allVars))
+	for s := 0; s < nSamples; s++ {
+		for i, v := range allVars {
+			assignment[v] = ai.rng.Intn(allCard[i])
+		}
+
+		weight := 1.0
+		for _, f := range ai.factors {
+			fVars := f.Variables()
+			fAssign := make(map[string]int, len(fVars))
+			for _, fv := range fVars {
+				fAssign[fv] = assignment[fv]
+			}
+			weight *= f.GetValue(fAssign)
+		}
+
+		if weight == 0 {
+			continue
+		}
+
+		flat := 0
+		stride := 1
+		for i := len(allVars) - 1; i >= 0; i-- {
+			flat += assignment[allVars[i]] * stride
+			stride *= allCard[i]
+		}
+		counts[flat] += weight
+	}
+
+	// Normalize.
+	sum := 0.0
+	for _, c := range counts {
+		sum += c
+	}
+	if sum == 0 {
+		return nil, fmt.Errorf("approx_inference: all samples had zero weight")
+	}
+	for i := range counts {
+		counts[i] /= sum
+	}
+
+	return factors.NewDiscreteFactor(allVars, allCard, counts)
+}
+
+// MAPQuery approximates the MAP (Maximum A Posteriori) assignment for
+// queryVars given evidence, using sampling to find the assignment with
+// the highest approximate probability.
+func (ai *ApproxInference) MAPQuery(queryVars []string, evidence map[string]int, nSamples int) (map[string]int, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("approx_inference: queryVars must not be empty")
+	}
+	if nSamples <= 0 {
+		return nil, fmt.Errorf("approx_inference: nSamples must be positive")
+	}
+
+	result, err := ai.Query(queryVars, evidence, nSamples)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the assignment with maximum value.
+	vars := result.Variables()
+	card := result.Cardinality()
+	totalSize := 1
+	for _, c := range card {
+		totalSize *= c
+	}
+
+	bestVal := -1.0
+	bestAssignment := make(map[string]int, len(vars))
+
+	for flat := 0; flat < totalSize; flat++ {
+		assignment := make(map[string]int, len(vars))
+		rem := flat
+		for i := len(vars) - 1; i >= 0; i-- {
+			assignment[vars[i]] = rem % card[i]
+			rem /= card[i]
+		}
+		val := result.GetValue(assignment)
+		if val > bestVal {
+			bestVal = val
+			bestAssignment = assignment
+		}
+	}
+
+	return bestAssignment, nil
+}

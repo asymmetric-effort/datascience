@@ -98,6 +98,21 @@ func (es *ExhaustiveSearch) AllScores() (map[string]float64, error) {
 	return scores, nil
 }
 
+// AllDAGs returns all valid DAG structures over the data's variables as lists
+// of directed edges. Returns an error if there are more than maxExhaustiveVars variables.
+func (es *ExhaustiveSearch) AllDAGs() ([][][2]string, error) {
+	columns := es.data.Columns()
+	if len(columns) == 0 {
+		return nil, fmt.Errorf("learning: exhaustive search requires at least one column")
+	}
+	if len(columns) > maxExhaustiveVars {
+		return nil, fmt.Errorf("learning: exhaustive search supports at most %d variables, got %d", maxExhaustiveVars, len(columns))
+	}
+
+	sort.Strings(columns)
+	return enumerateDAGs(columns), nil
+}
+
 // scoreDAG computes the total score for a DAG defined by the given edge set.
 func (es *ExhaustiveSearch) scoreDAG(columns []string, edges [][2]string) float64 {
 	// Build parent map.

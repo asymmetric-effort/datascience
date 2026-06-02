@@ -81,6 +81,15 @@ func (m *MMHC) Estimate() (*models.BayesianNetwork, error) {
 	return hc.Estimate()
 }
 
+// MMPC runs the Max-Min Parents and Children algorithm for a target variable,
+// returning the candidate parent/child set. This is the public interface to
+// the internal mmpc method.
+func (m *MMHC) MMPC(target string) []string {
+	columns := m.data.Columns()
+	sort.Strings(columns)
+	return m.mmpc(target, columns)
+}
+
 // mmpcPhase runs the MMPC (Max-Min Parents and Children) algorithm for each
 // variable. Returns a map from variable to its candidate parent/child set.
 func (m *MMHC) mmpcPhase(columns []string) map[string][]string {

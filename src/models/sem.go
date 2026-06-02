@@ -2,8 +2,12 @@ package models
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"sort"
 
+	"github.com/asymmetric-effort/pgmgo/lib/graphgo"
+	"github.com/asymmetric-effort/pgmgo/lib/tabgo"
 	"github.com/asymmetric-effort/pgmgo/src/base"
 )
 
@@ -279,4 +283,352 @@ func transpose(a [][]float64, n int) [][]float64 {
 		}
 	}
 	return t
+}
+
+// Fit estimates SEM parameters from data using OLS (ordinary least squares)
+// per equation. The DataFrame must contain columns for all variables.
+// The DAG structure must be set up (via AddEquation or by constructing
+// equations with zero coefficients) before calling Fit.
+func (s *SEM) Fit(data *tabgo.DataFrame) error {
+	if data == nil {
+		return fmt.Errorf("models: data must not be nil")
+	}
+	if data.Len() == 0 {
+		return fmt.Errorf("models: data must not be empty")
+	}
+
+	nodes := s.dag.Nodes()
+	if len(nodes) == 0 {
+		return fmt.Errorf("models: SEM has no variables")
+	}
+
+	nRows := data.Len()
+
+	// Fetch all columns.
+	colData := make(map[string][]float64, len(nodes))
+	for _, node := range nodes {
+		colData[node] = data.Column(node).Float64()
+	}
+
+	for _, node := range nodes {
+		parents := s.dag.Parents(node)
+		y := colData[node]
+
+		if len(parents) == 0 {
+			// No parents: estimate mean and variance.
+			mean := 0.0
+			for _, v := range y {
+				mean += v
+			}
+			mean /= float64(nRows)
+
+			variance := 0.0
+			for _, v := range y {
+				d := v - mean
+				variance += d * d
+			}
+			if nRows > 1 {
+				variance /= float64(nRows)
+			}
+			if variance <= 0 {
+				variance = 1e-10
+			}
+
+			s.equations[node] = &SEMEquation{
+				Variable:     node,
+				Parents:      nil,
+				Coefficients: nil,
+				Intercept:    mean,
+				Variance:     variance,
+			}
+			continue
+		}
+
+		// OLS: y = intercept + sum(beta_i * x_i) + error
+		// Using normal equations: [X^T X] beta = X^T y
+		// where X has a column of 1s for the intercept.
+		nP := len(parents)
+		k := nP + 1 // number of parameters (intercept + coefficients)
+
+		// Build X^T X (k x k) and X^T y (k x 1).
+		xtx := make([][]float64, k)
+		for i := range xtx {
+			xtx[i] = make([]float64, k)
+		}
+		xty := make([]float64, k)
+
+		for row := 0; row < nRows; row++ {
+			// x[0] = 1 (intercept), x[1..] = parent values
+			x := make([]float64, k)
+			x[0] = 1.0
+			for j, p := range parents {
+				x[j+1] = colData[p][row]
+			}
+			for i := 0; i < k; i++ {
+				for j := 0; j < k; j++ {
+					xtx[i][j] += x[i] * x[j]
+				}
+				xty[i] += x[i] * y[row]
+			}
+		}
+
+		// Solve via matrix inversion.
+		inv, err := invertMatrix(xtx)
+		if err != nil {
+			return fmt.Errorf("models: OLS for %q: %w", node, err)
+		}
+
+		// beta = inv(X^T X) * X^T y
+		beta := make([]float64, k)
+		for i := 0; i < k; i++ {
+			for j := 0; j < k; j++ {
+				beta[i] += inv[i][j] * xty[j]
+			}
+		}
+
+		intercept := beta[0]
+		coefficients := beta[1:]
+
+		// Compute residual variance.
+		variance := 0.0
+		for row := 0; row < nRows; row++ {
+			predicted := intercept
+			for j, p := range parents {
+				predicted += coefficients[j] * colData[p][row]
+			}
+			d := y[row] - predicted
+			variance += d * d
+		}
+		if nRows > 1 {
+			variance /= float64(nRows)
+		}
+		if variance <= 0 {
+			variance = 1e-10
+		}
+
+		pCopy := make([]string, len(parents))
+		copy(pCopy, parents)
+		cCopy := make([]float64, len(coefficients))
+		copy(cCopy, coefficients)
+
+		s.equations[node] = &SEMEquation{
+			Variable:     node,
+			Parents:      pCopy,
+			Coefficients: cCopy,
+			Intercept:    intercept,
+			Variance:     variance,
+		}
+	}
+
+	return nil
+}
+
+// GenerateSamples simulates data from the SEM by sampling in topological order.
+// Each variable is computed as: value = intercept + sum(coeff * parentValue) + N(0, variance).
+func (s *SEM) GenerateSamples(nSamples int) (*tabgo.DataFrame, error) {
+	if err := s.CheckModel(); err != nil {
+		return nil, fmt.Errorf("models: cannot generate samples: %w", err)
+	}
+	if nSamples <= 0 {
+		return nil, fmt.Errorf("models: nSamples must be positive, got %d", nSamples)
+	}
+
+	order, err := s.dag.TopologicalOrder()
+	if err != nil {
+		return nil, fmt.Errorf("models: cannot get topological order: %w", err)
+	}
+
+	data := make(map[string][]float64, len(order))
+	for _, v := range order {
+		data[v] = make([]float64, nSamples)
+	}
+
+	for i := 0; i < nSamples; i++ {
+		for _, v := range order {
+			eq := s.equations[v]
+			val := eq.Intercept
+			for j, p := range eq.Parents {
+				val += eq.Coefficients[j] * data[p][i]
+			}
+			// Add Gaussian noise using Box-Muller.
+			val += math.Sqrt(eq.Variance) * randStdNormal()
+			data[v][i] = val
+		}
+	}
+
+	// Build DataFrame.
+	vars := s.dag.Nodes() // sorted
+	rows := make([][]any, nSamples)
+	for i := 0; i < nSamples; i++ {
+		row := make([]any, len(vars))
+		for j, v := range vars {
+			row[j] = data[v][i]
+		}
+		rows[i] = row
+	}
+
+	return tabgo.NewDataFrameFromRows(vars, rows), nil
+}
+
+// randStdNormal returns a sample from N(0,1) using Box-Muller.
+func randStdNormal() float64 {
+	u1 := rand.Float64()
+	u2 := rand.Float64()
+	for u1 == 0 {
+		u1 = rand.Float64()
+	}
+	return math.Sqrt(-2*math.Log(u1)) * math.Cos(2*math.Pi*u2)
+}
+
+// SetParams sets the parameters for an existing equation.
+func (s *SEM) SetParams(variable string, coefficients []float64, intercept, variance float64) error {
+	eq, ok := s.equations[variable]
+	if !ok {
+		return fmt.Errorf("models: no equation for variable %q", variable)
+	}
+	if len(coefficients) != len(eq.Parents) {
+		return fmt.Errorf("models: coefficients length %d != parents length %d", len(coefficients), len(eq.Parents))
+	}
+	cCopy := make([]float64, len(coefficients))
+	copy(cCopy, coefficients)
+	eq.Coefficients = cCopy
+	eq.Intercept = intercept
+	eq.Variance = variance
+	return nil
+}
+
+// GetScalingIndicators returns one indicator variable per latent variable.
+// In a basic SEM, this returns all root nodes (nodes with no parents) as
+// they serve as natural scaling indicators for identification.
+func (s *SEM) GetScalingIndicators() []string {
+	return s.dag.GetRoots()
+}
+
+// ActiveTrailNodes returns the set of nodes reachable from variable via
+// active trails given the observed variables, using Bayes-ball on the
+// underlying DAG.
+func (s *SEM) ActiveTrailNodes(variable string, observed map[string]bool) ([]string, error) {
+	if !s.dag.HasNode(variable) {
+		return nil, fmt.Errorf("models: variable %q not in the SEM", variable)
+	}
+	if observed == nil {
+		observed = make(map[string]bool)
+	}
+
+	type visit struct {
+		node string
+		up   bool
+	}
+
+	reachable := make(map[string]bool)
+	visited := make(map[visit]bool)
+	queue := []visit{{variable, true}, {variable, false}}
+
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		if visited[cur] {
+			continue
+		}
+		visited[cur] = true
+
+		node := cur.node
+		isObserved := observed[node]
+
+		if cur.up {
+			if !isObserved {
+				reachable[node] = true
+				for _, p := range s.dag.Parents(node) {
+					queue = append(queue, visit{p, true})
+				}
+				for _, c := range s.dag.Children(node) {
+					queue = append(queue, visit{c, false})
+				}
+			}
+		} else {
+			if !isObserved {
+				reachable[node] = true
+				for _, c := range s.dag.Children(node) {
+					queue = append(queue, visit{c, false})
+				}
+			} else {
+				for _, p := range s.dag.Parents(node) {
+					queue = append(queue, visit{p, true})
+				}
+			}
+		}
+	}
+
+	delete(reachable, variable)
+	result := make([]string, 0, len(reachable))
+	for n := range reachable {
+		result = append(result, n)
+	}
+	sort.Strings(result)
+	return result, nil
+}
+
+// Moralize returns the moral graph of the SEM's DAG as a graphgo.Graph.
+// The moral graph connects all co-parents and drops edge directions.
+func (s *SEM) Moralize() *graphgo.Graph {
+	dg := graphgo.NewDiGraph()
+	for _, n := range s.dag.Nodes() {
+		dg.AddNode(n)
+	}
+	for _, e := range s.dag.Edges() {
+		dg.AddEdge(e.Src, e.Dst)
+	}
+	return graphgo.Moralize(dg)
+}
+
+// FromLavaan is a stub that parses lavaan model syntax into an SEM.
+// Full lavaan syntax parsing is not yet implemented.
+func FromLavaan(syntax string) (*SEM, error) {
+	if syntax == "" {
+		return nil, fmt.Errorf("models: empty lavaan syntax")
+	}
+	return nil, fmt.Errorf("models: FromLavaan is not yet implemented")
+}
+
+// FromGraph creates an SEM from a DAG. Each variable gets an equation with
+// zero coefficients and unit variance.
+func FromGraph(dag *base.DAG) (*SEM, error) {
+	if dag == nil {
+		return nil, fmt.Errorf("models: dag must not be nil")
+	}
+	s := NewSEM()
+	nodes := dag.Nodes()
+	for _, node := range nodes {
+		parents := dag.Parents(node)
+		coeffs := make([]float64, len(parents))
+		if err := s.AddEquation(node, parents, coeffs, 0.0, 1.0); err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
+}
+
+// FromLisrel is a stub for creating an SEM from LISREL matrices.
+func FromLisrel() (*SEM, error) {
+	return nil, fmt.Errorf("models: FromLisrel is not yet implemented")
+}
+
+// FromRAM is a stub for creating an SEM from RAM (Reticular Action Model) matrices.
+func FromRAM() (*SEM, error) {
+	return nil, fmt.Errorf("models: FromRAM is not yet implemented")
+}
+
+// ToLisrel is a stub that converts the SEM to LISREL matrix representation.
+func (s *SEM) ToLisrel() (*SEM, error) {
+	return s, nil
+}
+
+// ToStandardLisrel is a stub that converts the SEM to standard LISREL form.
+func (s *SEM) ToStandardLisrel() (*SEM, error) {
+	return s, nil
+}
+
+// ToSEMGraph returns the SEM itself, as it already is a SEM graph representation.
+func (s *SEM) ToSEMGraph() *SEM {
+	return s
 }

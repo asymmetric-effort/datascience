@@ -251,6 +251,47 @@ func pdagToDAG(pdag *graphgo.PDAG) (*models.BayesianNetwork, error) {
 	return bn, nil
 }
 
+// OrientColliders orients v-structures (colliders) in a PDAG skeleton given
+// the separating sets. For each unshielded triple x - z - y where x and y
+// are not adjacent, if z is not in sepSet(x,y), orient as x -> z <- y.
+// This is the public interface to the v-structure orientation phase of PC.
+func OrientColliders(pdag *graphgo.PDAG, sepSets map[[2]string][]string) {
+	nodes := pdag.Nodes()
+	for _, z := range nodes {
+		var neighbors []string
+		for _, n := range nodes {
+			if n != z && pdag.HasUndirectedEdge(z, n) {
+				neighbors = append(neighbors, n)
+			}
+		}
+		sort.Strings(neighbors)
+
+		for i := 0; i < len(neighbors); i++ {
+			for j := i + 1; j < len(neighbors); j++ {
+				x, y := neighbors[i], neighbors[j]
+				if pdag.Adjacent(x, y) {
+					continue
+				}
+				key := sepSetKey(x, y)
+				ss, exists := sepSets[key]
+				if !exists {
+					continue
+				}
+				if !containsString(ss, z) {
+					if pdag.HasUndirectedEdge(x, z) {
+						pdag.RemoveUndirectedEdge(x, z)
+						pdag.AddDirectedEdge(x, z)
+					}
+					if pdag.HasUndirectedEdge(y, z) {
+						pdag.RemoveUndirectedEdge(y, z)
+						pdag.AddDirectedEdge(y, z)
+					}
+				}
+			}
+		}
+	}
+}
+
 // adjacencyCount returns the number of undirected neighbors of node in the PDAG.
 func (pc *PCAlgorithm) adjacencyCount(pdag *graphgo.PDAG, node string) int {
 	count := 0

@@ -3,6 +3,8 @@ package factors
 import (
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 )
 
 const jpdTolerance = 1e-9
@@ -227,4 +229,170 @@ func (j *JointProbabilityDistribution) Copy() *JointProbabilityDistribution {
 	return &JointProbabilityDistribution{
 		DiscreteFactor: j.DiscreteFactor.Copy(),
 	}
+}
+
+// GetIndependencies finds all pairwise conditional independencies in the
+// distribution by testing P(X,Y|Z) = P(X|Z)*P(Y|Z) for all variable pairs
+// and all possible conditioning sets Z (subsets of remaining variables).
+func (j *JointProbabilityDistribution) GetIndependencies(atol float64) [][3][]string {
+	vars := j.Variables()
+	var result [][3][]string
+
+	for i := 0; i < len(vars); i++ {
+		for k := i + 1; k < len(vars); k++ {
+			v1, v2 := vars[i], vars[k]
+
+			var others []string
+			for _, v := range vars {
+				if v != v1 && v != v2 {
+					others = append(others, v)
+				}
+			}
+
+			if j.CheckIndependence(v1, v2, nil, atol) {
+				result = append(result, [3][]string{{v1}, {v2}, {}})
+			}
+
+			nOthers := len(others)
+			for mask := 1; mask < (1 << nOthers); mask++ {
+				var condSet []string
+				for b := 0; b < nOthers; b++ {
+					if mask&(1<<b) != 0 {
+						condSet = append(condSet, others[b])
+					}
+				}
+				if j.CheckIndependence(v1, v2, condSet, atol) {
+					cs := make([]string, len(condSet))
+					copy(cs, condSet)
+					sort.Strings(cs)
+					result = append(result, [3][]string{{v1}, {v2}, cs})
+				}
+			}
+		}
+	}
+	return result
+}
+
+// MinimalIMap finds a minimal I-map DAG for this distribution using a greedy
+// approach. It returns the edge list of the DAG.
+func (j *JointProbabilityDistribution) MinimalIMap(ordering []string, atol float64) [][2]string {
+	var edges [][2]string
+
+	for i, node := range ordering {
+		preceding := make([]string, i)
+		copy(preceding, ordering[:i])
+
+		parents := make([]string, len(preceding))
+		copy(parents, preceding)
+
+		for k := 0; k < len(parents); {
+			candidate := make([]string, 0, len(parents)-1)
+			candidate = append(candidate, parents[:k]...)
+			candidate = append(candidate, parents[k+1:]...)
+
+			removed := parents[k]
+			if j.CheckIndependence(node, removed, candidate, atol) {
+				parents = candidate
+			} else {
+				k++
+			}
+		}
+
+		for _, p := range parents {
+			edges = append(edges, [2]string{p, node})
+		}
+	}
+
+	return edges
+}
+
+// IsIMap checks if the given DAG (represented as edges) is an I-map of this
+// distribution.
+func (j *JointProbabilityDistribution) IsIMap(edges [][2]string, atol float64) bool {
+	vars := j.Variables()
+	parentMap := make(map[string][]string)
+	for _, v := range vars {
+		parentMap[v] = nil
+	}
+	for _, e := range edges {
+		parentMap[e[1]] = append(parentMap[e[1]], e[0])
+	}
+
+	childMap := make(map[string]map[string]bool)
+	for _, v := range vars {
+		childMap[v] = make(map[string]bool)
+	}
+	for _, e := range edges {
+		childMap[e[0]][e[1]] = true
+	}
+
+	for _, node := range vars {
+		parents := parentMap[node]
+		parentSet := make(map[string]bool)
+		for _, p := range parents {
+			parentSet[p] = true
+		}
+
+		for _, other := range vars {
+			if other == node || parentSet[other] || childMap[node][other] {
+				continue
+			}
+			if !j.CheckIndependence(node, other, parents, atol) {
+				if !jpdHasDirectedPath(edges, node, other) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
+}
+
+// jpdHasDirectedPath checks if there is a directed path from src to dst.
+func jpdHasDirectedPath(edges [][2]string, src, dst string) bool {
+	children := make(map[string][]string)
+	for _, e := range edges {
+		children[e[0]] = append(children[e[0]], e[1])
+	}
+	visited := make(map[string]bool)
+	queue := []string{src}
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		if curr == dst {
+			return true
+		}
+		if visited[curr] {
+			continue
+		}
+		visited[curr] = true
+		queue = append(queue, children[curr]...)
+	}
+	return false
+}
+
+// ToFactor converts the JointProbabilityDistribution to a DiscreteFactor.
+func (j *JointProbabilityDistribution) ToFactor() *DiscreteFactor {
+	return j.DiscreteFactor.Copy()
+}
+
+// PMap returns all conditional independencies as a string representation.
+func (j *JointProbabilityDistribution) PMap(atol float64) string {
+	indeps := j.GetIndependencies(atol)
+	if len(indeps) == 0 {
+		return "{}"
+	}
+
+	var parts []string
+	for _, ind := range indeps {
+		x := strings.Join(ind[0], ", ")
+		y := strings.Join(ind[1], ", ")
+		z := strings.Join(ind[2], ", ")
+		if z == "" {
+			parts = append(parts, fmt.Sprintf("%s _|_ %s", x, y))
+		} else {
+			parts = append(parts, fmt.Sprintf("%s _|_ %s | %s", x, y, z))
+		}
+	}
+	return "{\n  " + strings.Join(parts, ",\n  ") + "\n}"
 }
