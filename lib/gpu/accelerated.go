@@ -74,9 +74,6 @@ func AcceleratedVE(backend Backend, factors []FactorData, queryVars, elimVars []
 
 		// Marginalize out elimVar.
 		axis := indexOf(product.Variables, elimVar)
-		if axis < 0 {
-			continue
-		}
 		newValues, newShape := backend.Marginalize(product.Values, product.Shape, axis)
 		newVars := removeString(product.Variables, axis)
 		remaining = append(remaining, FactorData{Variables: newVars, Shape: newShape, Values: newValues})
@@ -84,9 +81,6 @@ func AcceleratedVE(backend Backend, factors []FactorData, queryVars, elimVars []
 	}
 
 	// Step 3: Multiply remaining factors.
-	if len(workingFactors) == 0 {
-		return nil, errors.New("gpu: no factors remain after elimination")
-	}
 	result := workingFactors[0]
 	for i := 1; i < len(workingFactors); i++ {
 		result = multiplyFactors(backend, result, workingFactors[i])
@@ -260,9 +254,6 @@ func AcceleratedSample(backend Backend, factors []FactorData, topoOrder []string
 					continue
 				}
 				axis := indexOf(reduced.Variables, pv)
-				if axis < 0 {
-					continue
-				}
 				newVals, newShape := backend.FactorReduce(reduced.Values, reduced.Shape, axis, val)
 				reduced = FactorData{
 					Variables: removeString(reduced.Variables, axis),

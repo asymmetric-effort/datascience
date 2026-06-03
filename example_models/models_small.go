@@ -2,11 +2,7 @@ package example_models
 
 // This file contains small Bayesian network models (< 10 nodes) with full CPDs.
 
-import (
-	"log"
-
-	"github.com/asymmetric-effort/pgmgo/src/models"
-)
+import "github.com/asymmetric-effort/pgmgo/src/models"
 
 // Survey returns the Survey Bayesian network with 6 nodes.
 // This network models the relationship between age, sex, education,
@@ -83,9 +79,7 @@ func Survey() *models.BayesianNetwork {
 		{0.10, 0.18, 0.08, 0.09}, // other
 	}, []string{"O", "R"}, []int{2, 2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: Survey network validation failed: %v", err)
-	}
+	mustCheck(bn, "Survey")
 	return bn
 }
 
@@ -137,9 +131,7 @@ func MontyHall() *models.BayesianNetwork {
 		{0.5, 1.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.5}, // Door3
 	}, []string{"Prize", "Guest"}, []int{3, 3})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: MontyHall network validation failed: %v", err)
-	}
+	mustCheck(bn, "MontyHall")
 	return bn
 }
 
@@ -203,9 +195,7 @@ func DogProblem() *models.BayesianNetwork {
 		{0.40, 0.95}, // false
 	}, []string{"FamilyOut"}, []int{2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: DogProblem network validation failed: %v", err)
-	}
+	mustCheck(bn, "DogProblem")
 	return bn
 }
 
@@ -283,9 +273,7 @@ func FraudDetection() *models.BayesianNetwork {
 		{0.01, 0.60, 0.50, 0.98}, // Yes
 	}, []string{"ForeignPurchase", "HighAmount"}, []int{2, 2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: FraudDetection network validation failed: %v", err)
-	}
+	mustCheck(bn, "FraudDetection")
 	return bn
 }
 
@@ -381,9 +369,7 @@ func MedicalDiagnosis() *models.BayesianNetwork {
 		{0.10, 0.80, 0.70, 0.95}, // Yes
 	}, []string{"Bronchitis", "LungCancer"}, []int{2, 2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: MedicalDiagnosis network validation failed: %v", err)
-	}
+	mustCheck(bn, "MedicalDiagnosis")
 	return bn
 }
 
@@ -443,8 +429,6 @@ func CoinToss() *models.BayesianNetwork {
 		{0.5, 0.2}, // Tails
 	}, []string{"Bias"}, []int{2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: CoinToss network validation failed: %v", err)
-	}
+	mustCheck(bn, "CoinToss")
 	return bn
 }

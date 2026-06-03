@@ -330,6 +330,26 @@ func learnStructure(dataPath, method, scoreName string, significance float64, ou
 		return 1
 	}
 
+	// Set state names from data for each node so WriteBIF succeeds.
+	setStatesFromData(bn, data)
+
+	// Fit MLE parameters so the output file has CPDs.
+	mle := learning.NewMLE(bn, data)
+	if mleErr := mle.Estimate(); mleErr != nil {
+		// If MLE fails (e.g. insufficient data), generate uniform CPDs.
+		nStates := 2
+		for _, node := range bn.Nodes() {
+			states := bn.GetStates(node)
+			if len(states) > nStates {
+				nStates = len(states)
+			}
+		}
+		if rErr := bn.GetRandomCPDs(nStates, 0); rErr != nil {
+			fmt.Fprintf(os.Stderr, "error: cannot generate CPDs: %v\n", rErr)
+			return 1
+		}
+	}
+
 	if err := writeBIFFile(output, bn); err != nil {
 		fmt.Fprintf(os.Stderr, "error: cannot write output: %v\n", err)
 		return 1
@@ -821,6 +841,28 @@ func printFactor(f *factors.DiscreteFactor) {
 			fmt.Printf("%d\t", idx)
 		}
 		fmt.Printf("%.6f\n", data[i])
+	}
+}
+
+// setStatesFromData infers state names from unique values in each column
+// and sets them on the BN nodes that don't already have states.
+func setStatesFromData(bn *models.BayesianNetwork, data *tabgo.DataFrame) {
+	for _, node := range bn.Nodes() {
+		existing := bn.GetStates(node)
+		if len(existing) > 0 {
+			continue
+		}
+		col := data.Column(node)
+		if col == nil {
+			continue
+		}
+		uniq := col.Unique()
+		stateNames := make([]string, len(uniq))
+		for i, v := range uniq {
+			stateNames[i] = fmt.Sprintf("%v", v)
+		}
+		sort.Strings(stateNames)
+		bn.SetStates(node, stateNames)
 	}
 }
 

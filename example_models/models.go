@@ -29,6 +29,14 @@ func must(err error) {
 	}
 }
 
+// mustCheck validates a BayesianNetwork and panics if validation fails.
+// Used at the end of factory functions where the model is known to be correct.
+func mustCheck(bn *models.BayesianNetwork, name string) {
+	if err := bn.CheckModel(); err != nil {
+		log.Panicf("example_models: %s network validation failed: %v", name, err)
+	}
+}
+
 // Student returns the classic Student Bayesian network with 5 nodes:
 //
 //	D (Difficulty): 2 states {Easy, Hard}
@@ -87,9 +95,7 @@ func Student() *models.BayesianNetwork {
 		{0.05, 0.8}, // High
 	}, []string{"I"}, []int{2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: Student network validation failed: %v", err)
-	}
+	mustCheck(bn, "Student")
 	return bn
 }
 
@@ -182,9 +188,7 @@ func Asia() *models.BayesianNetwork {
 		{0.10, 0.70, 0.80, 0.90}, // Yes
 	}, []string{"Bronc", "Either"}, []int{2, 2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: Asia network validation failed: %v", err)
-	}
+	mustCheck(bn, "Asia")
 	return bn
 }
 
@@ -249,9 +253,7 @@ func Alarm() *models.BayesianNetwork {
 		{0.01, 0.70}, // Yes
 	}, []string{"Alarm"}, []int{2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: Alarm network validation failed: %v", err)
-	}
+	mustCheck(bn, "Alarm")
 	return bn
 }
 
@@ -314,9 +316,7 @@ func Cancer() *models.BayesianNetwork {
 		{0.30, 0.65}, // Yes
 	}, []string{"Cancer"}, []int{2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: Cancer network validation failed: %v", err)
-	}
+	mustCheck(bn, "Cancer")
 	return bn
 }
 
@@ -420,8 +420,6 @@ func WaterSprinkler() *models.BayesianNetwork {
 		{0.0, 0.9, 0.9, 0.99}, // Yes
 	}, []string{"Rain", "Sprinkler"}, []int{2, 2})))
 
-	if err := bn.CheckModel(); err != nil {
-		log.Panicf("example_models: WaterSprinkler network validation failed: %v", err)
-	}
+	mustCheck(bn, "WaterSprinkler")
 	return bn
 }

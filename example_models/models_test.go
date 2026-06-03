@@ -2,7 +2,12 @@
 
 package example_models
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/asymmetric-effort/pgmgo/src/models"
+)
 
 func TestStudentCheckModel(t *testing.T) {
 	bn := Student()
@@ -333,4 +338,39 @@ func TestGetUnknown(t *testing.T) {
 	if err == nil {
 		t.Fatal("Get(nonexistent_model) should return error")
 	}
+}
+
+// --- Panic-path coverage for helper functions ---
+
+func TestMustPanicsOnError(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("must(err) should panic on non-nil error")
+		}
+	}()
+	must(fmt.Errorf("test error"))
+}
+
+func TestMustCPDPanicsOnBadInput(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("mustCPD should panic on invalid input")
+		}
+	}()
+	// variableCard=0 is invalid and will cause NewTabularCPD to return an error
+	mustCPD("X", 0, nil, nil, nil)
+}
+
+func TestMustCheckPanicsOnInvalidModel(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("mustCheck should panic when CheckModel fails")
+		}
+	}()
+	// Build a network with a node but no CPD — CheckModel will fail
+	bn := models.NewBayesianNetwork()
+	_ = bn.AddNode("A")
+	_ = bn.AddNode("B")
+	_ = bn.AddEdge("A", "B")
+	mustCheck(bn, "TestBroken")
 }
