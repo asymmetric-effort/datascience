@@ -22,6 +22,12 @@ import (
 //	... (blank line)
 //	numEntries (per factor table)
 //	val1 val2 ...
+//
+// uaiScope holds parsed UAI factor scope data.
+type uaiScope struct {
+	vars []int
+}
+
 func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 	tokens, err := uaiTokenize(r)
 	if err != nil {
@@ -95,10 +101,7 @@ func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 	}
 
 	// Factor scopes.
-	type scope struct {
-		vars []int
-	}
-	scopes := make([]scope, numFactors)
+	scopes := make([]uaiScope, numFactors)
 	for f := 0; f < numFactors; f++ {
 		numScopeVars, err := nextInt()
 		if err != nil {
@@ -115,21 +118,32 @@ func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 
 	// Build network.
 	bn := models.NewBayesianNetwork()
+	builder := &realBuilder{bn: bn}
 
+	if err := uaiBuildNetwork(builder, numVars, cards, numFactors, scopes, nextInt, nextFloat); err != nil {
+		return nil, err
+	}
+
+	return bn, nil
+}
+
+// uaiBuildNetwork is the testable implementation of the UAI network building phase.
+// Accepts a bnBuilder interface for mock injection.
+func uaiBuildNetwork(builder bnBuilder, numVars int, cards []int, numFactors int, scopes []uaiScope, nextInt func() (int, error), nextFloat func() (float64, error)) error {
 	// Create variable names: V0, V1, ...
 	varNames := make([]string, numVars)
 	for i := 0; i < numVars; i++ {
 		varNames[i] = fmt.Sprintf("V%d", i)
-		if err := bn.AddNode(varNames[i]); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddNode(varNames[i]); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		// Generate state names: s0, s1, ...
 		states := make([]string, cards[i])
 		for s := 0; s < cards[i]; s++ {
 			states[s] = fmt.Sprintf("s%d", s)
 		}
-		if err := bn.SetStates(varNames[i], states); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.SetStates(varNames[i], states); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
@@ -137,13 +151,13 @@ func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 	for f := 0; f < numFactors; f++ {
 		numEntries, err := nextInt()
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: error reading entry count for factor %d: %w", f, err)
+			return fmt.Errorf("readwrite: error reading entry count for factor %d: %w", f, err)
 		}
 		vals := make([]float64, numEntries)
 		for j := 0; j < numEntries; j++ {
 			vals[j], err = nextFloat()
 			if err != nil {
-				return nil, fmt.Errorf("readwrite: error reading value for factor %d: %w", f, err)
+				return fmt.Errorf("readwrite: error reading value for factor %d: %w", f, err)
 			}
 		}
 
@@ -162,9 +176,9 @@ func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 		for _, pi := range sv[:len(sv)-1] {
 			parents = append(parents, varNames[pi])
 			evidenceCard = append(evidenceCard, cards[pi])
-			if err := bn.AddEdge(varNames[pi], childName); err != nil {
+			if err := builder.AddEdge(varNames[pi], childName); err != nil {
 				if !strings.Contains(err.Error(), "already exists") {
-					return nil, fmt.Errorf("readwrite: %w", err)
+					return fmt.Errorf("readwrite: %w", err)
 				}
 			}
 		}
@@ -175,7 +189,7 @@ func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 		}
 
 		if len(vals) != childCard*numParentConfigs {
-			return nil, fmt.Errorf("readwrite: factor %d has %d values, expected %d",
+			return fmt.Errorf("readwrite: factor %d has %d values, expected %d",
 				f, len(vals), childCard*numParentConfigs)
 		}
 
@@ -197,14 +211,14 @@ func ReadUAI(r io.Reader) (*models.BayesianNetwork, error) {
 
 		cpd, err := factors.NewTabularCPD(childName, childCard, values, parents, evidenceCard)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", childName, err)
+			return fmt.Errorf("readwrite: failed to create CPD for %q: %w", childName, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteUAI serializes a BayesianNetwork to UAI format.

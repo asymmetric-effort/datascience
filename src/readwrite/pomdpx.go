@@ -69,17 +69,25 @@ type pomdpxEntry struct {
 // unconditional CPDs, and StateTransitionFunction for conditional CPDs with
 // parent references via Entry instance/probability pairs.
 func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
+	bn := models.NewBayesianNetwork()
+	if err := readPomdpXWith(r, &realBuilder{bn: bn}, bn); err != nil {
+		return nil, err
+	}
+	return bn, nil
+}
+
+// readPomdpXWith is the testable implementation of ReadPomdpX. Accepts a
+// bnBuilder interface for mock injection.
+func readPomdpXWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork) error {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("readwrite: error reading PomdpX: %w", err)
+		return fmt.Errorf("readwrite: error reading PomdpX: %w", err)
 	}
 
 	var doc pomdpxDoc
 	if err := xml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("readwrite: error parsing PomdpX: %w", err)
+		return fmt.Errorf("readwrite: error parsing PomdpX: %w", err)
 	}
-
-	bn := models.NewBayesianNetwork()
 
 	type varInfo struct {
 		card   int
@@ -116,11 +124,11 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 			}
 		}
 
-		if err := bn.AddNode(name); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddNode(name); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
-		if err := bn.SetStates(name, states); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.SetStates(name, states); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		varMap[name] = &varInfo{card: len(states), states: states}
 	}
@@ -156,7 +164,7 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 
 		// Add edges.
 		for _, p := range parents {
-			if err := bn.AddEdge(p, child); err != nil {
+			if err := builder.AddEdge(p, child); err != nil {
 				if !strings.Contains(err.Error(), "already exists") {
 					return fmt.Errorf("readwrite: %w", err)
 				}
@@ -191,7 +199,7 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 				if err != nil {
 					return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 				}
-				if err := bn.AddCPD(cpd); err != nil {
+				if err := builder.AddCPD(cpd); err != nil {
 					return fmt.Errorf("readwrite: %w", err)
 				}
 			}
@@ -303,7 +311,7 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 			if err != nil {
 				return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 			}
-			if err := bn.AddCPD(cpd); err != nil {
+			if err := builder.AddCPD(cpd); err != nil {
 				return fmt.Errorf("readwrite: %w", err)
 			}
 		}
@@ -315,7 +323,7 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 	if doc.InitBelief != nil {
 		for _, cp := range doc.InitBelief.CondProbs {
 			if err := parseCondProb(cp); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -324,7 +332,7 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 	if doc.StateTransition != nil {
 		for _, cp := range doc.StateTransition.CondProbs {
 			if err := parseCondProb(cp); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -339,15 +347,15 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 			}
 			cpd, err := factors.NewTabularCPD(name, info.card, values, nil, nil)
 			if err != nil {
-				return nil, fmt.Errorf("readwrite: failed to create default CPD for %q: %w", name, err)
+				return fmt.Errorf("readwrite: failed to create default CPD for %q: %w", name, err)
 			}
-			if err := bn.AddCPD(cpd); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddCPD(cpd); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WritePomdpX serializes a BayesianNetwork to PomdpX format with full

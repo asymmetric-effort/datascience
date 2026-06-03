@@ -45,19 +45,27 @@ func ReadJSON(r io.Reader) (*models.BayesianNetwork, error) {
 		return nil, err
 	}
 
-	// Add CPDs.
+	if err := jsonAddCPDs(&jn, &realBuilder{bn: bn}); err != nil {
+		return nil, err
+	}
+
+	return bn, nil
+}
+
+// jsonAddCPDs is the testable implementation for adding CPDs during JSON read.
+// Accepts a bnBuilder interface for mock injection.
+func jsonAddCPDs(jn *jsonNetwork, builder bnBuilder) error {
 	for variable, jcpd := range jn.CPDs {
 		cpd, err := factors.NewTabularCPD(variable, jcpd.VariableCard, jcpd.Values,
 			jcpd.Evidence, jcpd.EvidenceCard)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", variable, err)
+			return fmt.Errorf("readwrite: failed to create CPD for %q: %w", variable, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
-
-	return bn, nil
+	return nil
 }
 
 // ReadJSONStructure parses a JSON file and returns a BayesianNetwork with

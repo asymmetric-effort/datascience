@@ -40,17 +40,25 @@ type xdslExts struct {
 
 // ReadXDSL parses a GeNIe XDSL format file and returns a BayesianNetwork.
 func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
+	bn := models.NewBayesianNetwork()
+	if err := readXDSLWith(r, &realBuilder{bn: bn}); err != nil {
+		return nil, err
+	}
+	return bn, nil
+}
+
+// readXDSLWith is the testable implementation of ReadXDSL. Accepts a bnBuilder
+// interface for mock injection.
+func readXDSLWith(r io.Reader, builder bnBuilder) error {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("readwrite: error reading XDSL: %w", err)
+		return fmt.Errorf("readwrite: error reading XDSL: %w", err)
 	}
 
 	var smile xdslSmile
 	if err := xml.Unmarshal(data, &smile); err != nil {
-		return nil, fmt.Errorf("readwrite: error parsing XDSL: %w", err)
+		return fmt.Errorf("readwrite: error parsing XDSL: %w", err)
 	}
-
-	bn := models.NewBayesianNetwork()
 
 	type varInfo struct {
 		card   int
@@ -65,11 +73,11 @@ func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
 		for i, s := range cpt.States {
 			states[i] = s.ID
 		}
-		if err := bn.AddNode(name); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddNode(name); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
-		if err := bn.SetStates(name, states); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.SetStates(name, states); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		varMap[name] = &varInfo{card: len(states), states: states}
 	}
@@ -90,12 +98,12 @@ func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
 				parents = append(parents, p)
 				pi := varMap[p]
 				if pi == nil {
-					return nil, fmt.Errorf("readwrite: CPT references unknown parent %q", p)
+					return fmt.Errorf("readwrite: CPT references unknown parent %q", p)
 				}
 				evidenceCard = append(evidenceCard, pi.card)
-				if err := bn.AddEdge(p, child); err != nil {
+				if err := builder.AddEdge(p, child); err != nil {
 					if !strings.Contains(err.Error(), "already exists") {
-						return nil, fmt.Errorf("readwrite: %w", err)
+						return fmt.Errorf("readwrite: %w", err)
 					}
 				}
 			}
@@ -109,12 +117,12 @@ func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
 		// Parse probabilities.
 		vals, err := xmlbifParseFloats(cpt.Probabilities)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: error parsing probabilities for %q: %w", child, err)
+			return fmt.Errorf("readwrite: error parsing probabilities for %q: %w", child, err)
 		}
 
 		expectedLen := childInfo.card * numParentConfigs
 		if len(vals) != expectedLen {
-			return nil, fmt.Errorf("readwrite: CPT for %q has %d values, expected %d",
+			return fmt.Errorf("readwrite: CPT for %q has %d values, expected %d",
 				child, len(vals), expectedLen)
 		}
 
@@ -134,14 +142,14 @@ func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
 
 		cpd, err := factors.NewTabularCPD(child, childInfo.card, values, parents, evidenceCard)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+			return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteXDSL serializes a BayesianNetwork to GeNIe XDSL format.

@@ -15,22 +15,32 @@ import (
 // BayesianNetwork containing only structure (nodes and edges, no CPDs).
 // The first row must be a header with fields "from" and "to" (case-insensitive).
 func ReadCSVStructure(r io.Reader) (*models.BayesianNetwork, error) {
+	bn := models.NewBayesianNetwork()
+	if err := readCSVStructureWith(r, &realBuilder{bn: bn}); err != nil {
+		return nil, err
+	}
+	return bn, nil
+}
+
+// readCSVStructureWith is the testable implementation of ReadCSVStructure.
+// Accepts a bnBuilder interface for mock injection.
+func readCSVStructureWith(r io.Reader, builder bnBuilder) error {
 	reader := csv.NewReader(r)
 	reader.TrimLeadingSpace = true
 
 	records, err := reader.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("readwrite: error reading CSV: %w", err)
+		return fmt.Errorf("readwrite: error reading CSV: %w", err)
 	}
 
 	if len(records) == 0 {
-		return nil, fmt.Errorf("readwrite: empty CSV file")
+		return fmt.Errorf("readwrite: empty CSV file")
 	}
 
 	// Parse header.
 	header := records[0]
 	if len(header) < 2 {
-		return nil, fmt.Errorf("readwrite: CSV header must have at least 2 columns, got %d", len(header))
+		return fmt.Errorf("readwrite: CSV header must have at least 2 columns, got %d", len(header))
 	}
 
 	fromCol, toCol := -1, -1
@@ -43,10 +53,9 @@ func ReadCSVStructure(r io.Reader) (*models.BayesianNetwork, error) {
 		}
 	}
 	if fromCol < 0 || toCol < 0 {
-		return nil, fmt.Errorf("readwrite: CSV header must contain 'from' and 'to' columns, got %v", header)
+		return fmt.Errorf("readwrite: CSV header must contain 'from' and 'to' columns, got %v", header)
 	}
 
-	bn := models.NewBayesianNetwork()
 	added := make(map[string]bool)
 
 	for _, row := range records[1:] {
@@ -60,25 +69,25 @@ func ReadCSVStructure(r io.Reader) (*models.BayesianNetwork, error) {
 		}
 
 		if !added[from] {
-			if err := bn.AddNode(from); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddNode(from); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 			added[from] = true
 		}
 		if !added[to] {
-			if err := bn.AddNode(to); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddNode(to); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 			added[to] = true
 		}
-		if err := bn.AddEdge(from, to); err != nil {
+		if err := builder.AddEdge(from, to); err != nil {
 			if !strings.Contains(err.Error(), "already exists") {
-				return nil, fmt.Errorf("readwrite: %w", err)
+				return fmt.Errorf("readwrite: %w", err)
 			}
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteCSVStructure writes the edge list of a BayesianNetwork as CSV with

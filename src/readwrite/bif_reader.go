@@ -22,12 +22,21 @@ type bifVarInfo struct {
 // BayesianNetwork. It handles network, variable, and probability blocks.
 // Lines containing // comments have the comment portion stripped.
 func ReadBIF(r io.Reader) (*models.BayesianNetwork, error) {
-	lines, err := readBIFLines(r)
-	if err != nil {
+	bn := models.NewBayesianNetwork()
+	if err := readBIFWith(r, &realBuilder{bn: bn}); err != nil {
 		return nil, err
 	}
+	return bn, nil
+}
 
-	bn := models.NewBayesianNetwork()
+// readBIFWith is the testable implementation of ReadBIF. Accepts a bnBuilder
+// interface for mock injection.
+func readBIFWith(r io.Reader, builder bnBuilder) error {
+	lines, err := readBIFLines(r)
+	if err != nil {
+		return err
+	}
+
 	varMap := make(map[string]*bifVarInfo)
 
 	i := 0
@@ -44,25 +53,25 @@ func ReadBIF(r io.Reader) (*models.BayesianNetwork, error) {
 
 		case "variable":
 			if len(tokens) < 2 {
-				return nil, fmt.Errorf("readwrite: malformed variable declaration")
+				return fmt.Errorf("readwrite: malformed variable declaration")
 			}
 			name := strings.TrimRight(tokens[1], "{")
 			if name == "" {
-				return nil, fmt.Errorf("readwrite: malformed variable declaration: missing name")
+				return fmt.Errorf("readwrite: malformed variable declaration: missing name")
 			}
 			blockContent, end := bifCollectBlock(lines, i)
 			i = end
 
 			states, err := bifParseVariableBlock(name, blockContent)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			if err := bn.AddNode(name); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddNode(name); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
-			if err := bn.SetStates(name, states); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.SetStates(name, states); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 			varMap[name] = &bifVarInfo{name: name, card: len(states), states: states}
 
@@ -74,19 +83,19 @@ func ReadBIF(r io.Reader) (*models.BayesianNetwork, error) {
 
 			child, parents, err := bifParseProbHeader(headerLine)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			childInfo := varMap[child]
 			if childInfo == nil {
-				return nil, fmt.Errorf("readwrite: probability references unknown variable %q", child)
+				return fmt.Errorf("readwrite: probability references unknown variable %q", child)
 			}
 
 			// Add edges.
 			for _, p := range parents {
-				if err := bn.AddEdge(p, child); err != nil {
+				if err := builder.AddEdge(p, child); err != nil {
 					if !strings.Contains(err.Error(), "already exists") {
-						return nil, fmt.Errorf("readwrite: %w", err)
+						return fmt.Errorf("readwrite: %w", err)
 					}
 				}
 			}
@@ -96,17 +105,17 @@ func ReadBIF(r io.Reader) (*models.BayesianNetwork, error) {
 			for _, p := range parents {
 				pi := varMap[p]
 				if pi == nil {
-					return nil, fmt.Errorf("readwrite: probability references unknown parent %q", p)
+					return fmt.Errorf("readwrite: probability references unknown parent %q", p)
 				}
 				parentInfos = append(parentInfos, pi)
 			}
 
 			cpd, err := bifParseProbBlock(childInfo, parents, parentInfos, blockContent)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			if err := bn.AddCPD(cpd); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddCPD(cpd); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 
 		default:
@@ -114,7 +123,7 @@ func ReadBIF(r io.Reader) (*models.BayesianNetwork, error) {
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // readBIFLines reads all lines, strips comments, and returns non-empty trimmed lines.

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"sort"
@@ -22,43 +23,91 @@ import (
 	"github.com/asymmetric-effort/pgmgo/src/structure_score"
 )
 
+// bifWriter abstracts BIF model serialization to enable testing of write error paths.
+type bifWriter interface {
+	Write(w io.Writer, bn *models.BayesianNetwork) error
+}
+
+// bifWriterFunc adapts a function to the bifWriter interface.
+type bifWriterFunc func(w io.Writer, bn *models.BayesianNetwork) error
+
+func (f bifWriterFunc) Write(w io.Writer, bn *models.BayesianNetwork) error {
+	return f(w, bn)
+}
+
+// defaultBIFWriter is the production bifWriter using readwrite.WriteBIF.
+var defaultBIFWriter bifWriter = bifWriterFunc(readwrite.WriteBIF)
+
+// formatWriterMap maps format names to bifWriter implementations for convert output.
+var formatWriterMap = map[string]bifWriter{
+	"bif":    bifWriterFunc(readwrite.WriteBIF),
+	"xmlbif": bifWriterFunc(readwrite.WriteXMLBIF),
+	"net":    bifWriterFunc(readwrite.WriteNET),
+	"uai":    bifWriterFunc(readwrite.WriteUAI),
+	"xdsl":   bifWriterFunc(readwrite.WriteXDSL),
+}
+
+// columnLookup abstracts DataFrame column access to enable testing of nil-column paths.
+type columnLookup interface {
+	Column(name string) *tabgo.Series
+}
+
+// dataFrameColumnLookup wraps a *tabgo.DataFrame and returns nil instead of panicking
+// when a column is not found.
+type dataFrameColumnLookup struct {
+	df *tabgo.DataFrame
+}
+
+func (d *dataFrameColumnLookup) Column(name string) *tabgo.Series {
+	defer func() { recover() }()
+	return d.df.Column(name)
+}
+
 const version = "0.0.25"
 
 func main() {
-	if len(os.Args) < 2 {
+	os.Exit(run(os.Args))
+}
+
+// run is the testable core of main(). It processes command-line
+// arguments and returns an exit code instead of calling os.Exit.
+func run(args []string) int {
+	if len(args) < 2 {
 		printUsage()
-		os.Exit(0)
+		return 0
 	}
 
-	switch os.Args[1] {
+	switch args[1] {
 	case "version", "--version", "-v":
 		fmt.Printf("pgmgo %s\n", version)
+		return 0
 	case "help", "--help", "-h":
 		printUsage()
+		return 0
 	case "validate":
-		os.Exit(runValidate(os.Args[2:]))
+		return runValidate(args[2:])
 	case "query":
-		os.Exit(runQuery(os.Args[2:]))
+		return runQuery(args[2:])
 	case "map":
-		os.Exit(runMAP(os.Args[2:]))
+		return runMAP(args[2:])
 	case "learn":
-		os.Exit(runLearn(os.Args[2:]))
+		return runLearn(args[2:])
 	case "fit":
-		os.Exit(runFit(os.Args[2:]))
+		return runFit(args[2:])
 	case "sample":
-		os.Exit(runSample(os.Args[2:]))
+		return runSample(args[2:])
 	case "info":
-		os.Exit(runInfo(os.Args[2:]))
+		return runInfo(args[2:])
 	case "convert":
-		os.Exit(runConvert(os.Args[2:]))
+		return runConvert(args[2:])
 	case "compare":
-		os.Exit(runCompare(os.Args[2:]))
+		return runCompare(args[2:])
 	case "do":
-		os.Exit(runDo(os.Args[2:]))
+		return runDo(args[2:])
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n", args[1])
 		printUsage()
-		os.Exit(1)
+		return 1
 	}
 }
 
@@ -333,6 +382,18 @@ func learnStructure(dataPath, method, scoreName string, significance float64, ou
 	// Set state names from data for each node so WriteBIF succeeds.
 	setStatesFromData(bn, data)
 
+	return learnStructureFinalize(bn, data, output)
+}
+
+// learnStructureFinalize is the testable implementation of the MLE fit and write
+// step. Accepts a BN and data for mock injection of MLE failure paths.
+func learnStructureFinalize(bn *models.BayesianNetwork, data *tabgo.DataFrame, output string) int {
+	return learnStructureFinalizeImpl(bn, data, output, defaultBIFWriter)
+}
+
+// learnStructureFinalizeImpl is the testable implementation of learnStructureFinalize.
+// Accepts a bifWriter for mock injection of write failures.
+func learnStructureFinalizeImpl(bn *models.BayesianNetwork, data *tabgo.DataFrame, output string, writer bifWriter) int {
 	// Fit MLE parameters so the output file has CPDs.
 	mle := learning.NewMLE(bn, data)
 	if mleErr := mle.Estimate(); mleErr != nil {
@@ -350,7 +411,7 @@ func learnStructure(dataPath, method, scoreName string, significance float64, ou
 		}
 	}
 
-	if err := writeBIFFile(output, bn); err != nil {
+	if err := writeBIFFileImpl(output, bn, writer); err != nil {
 		fmt.Fprintf(os.Stderr, "error: cannot write output: %v\n", err)
 		return 1
 	}
@@ -582,6 +643,12 @@ func runConvert(args []string) int {
 }
 
 func convertModel(input, fromFmt, toFmt, output string) int {
+	return convertModelImpl(input, fromFmt, toFmt, output, formatWriterMap)
+}
+
+// convertModelImpl is the testable implementation of convertModel.
+// Accepts a writer map for mock injection of write failures.
+func convertModelImpl(input, fromFmt, toFmt, output string, writers map[string]bifWriter) int {
 	f, err := os.Open(input)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: cannot open input: %v\n", err)
@@ -617,22 +684,12 @@ func convertModel(input, fromFmt, toFmt, output string) int {
 	}
 	defer outFile.Close()
 
-	switch toFmt {
-	case "bif":
-		err = readwrite.WriteBIF(outFile, bn)
-	case "xmlbif":
-		err = readwrite.WriteXMLBIF(outFile, bn)
-	case "net":
-		err = readwrite.WriteNET(outFile, bn)
-	case "uai":
-		err = readwrite.WriteUAI(outFile, bn)
-	case "xdsl":
-		err = readwrite.WriteXDSL(outFile, bn)
-	default:
+	writer, ok := writers[toFmt]
+	if !ok {
 		fmt.Fprintf(os.Stderr, "error: unknown output format %q\n", toFmt)
 		return 2
 	}
-	if err != nil {
+	if err := writer.Write(outFile, bn); err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to write %s: %v\n", toFmt, err)
 		return 1
 	}
@@ -766,12 +823,18 @@ func loadBIF(filePath string) (*models.BayesianNetwork, int) {
 }
 
 func writeBIFFile(path string, bn *models.BayesianNetwork) error {
+	return writeBIFFileImpl(path, bn, defaultBIFWriter)
+}
+
+// writeBIFFileImpl is the testable implementation of writeBIFFile.
+// Accepts a bifWriter for mock injection of write failures.
+func writeBIFFileImpl(path string, bn *models.BayesianNetwork, writer bifWriter) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return readwrite.WriteBIF(f, bn)
+	return writer.Write(f, bn)
 }
 
 func parseCSVList(s string) []string {
@@ -847,12 +910,18 @@ func printFactor(f *factors.DiscreteFactor) {
 // setStatesFromData infers state names from unique values in each column
 // and sets them on the BN nodes that don't already have states.
 func setStatesFromData(bn *models.BayesianNetwork, data *tabgo.DataFrame) {
+	setStatesFromDataImpl(bn, data, &dataFrameColumnLookup{df: data})
+}
+
+// setStatesFromDataImpl is the testable implementation of setStatesFromData.
+// Accepts a columnLookup for mock injection of missing-column paths.
+func setStatesFromDataImpl(bn *models.BayesianNetwork, data *tabgo.DataFrame, lookup columnLookup) {
 	for _, node := range bn.Nodes() {
 		existing := bn.GetStates(node)
 		if len(existing) > 0 {
 			continue
 		}
-		col := data.Column(node)
+		col := lookup.Column(node)
 		if col == nil {
 			continue
 		}

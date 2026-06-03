@@ -15,12 +15,20 @@ import (
 // NET format uses: node X { states = ("s0" "s1"); } and
 // potential (X | Y) { data = ((0.3 0.7)(0.8 0.2)); }
 func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
-	lines, err := netReadLines(r)
-	if err != nil {
+	bn := models.NewBayesianNetwork()
+	if err := readNETWith(r, &realBuilder{bn: bn}); err != nil {
 		return nil, err
 	}
+	return bn, nil
+}
 
-	bn := models.NewBayesianNetwork()
+// readNETWith is the testable implementation of ReadNET. Accepts a bnBuilder
+// interface for mock injection.
+func readNETWith(r io.Reader, builder bnBuilder) error {
+	lines, err := netReadLines(r)
+	if err != nil {
+		return err
+	}
 
 	type varInfo struct {
 		card   int
@@ -42,12 +50,12 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 
 		case "node":
 			if len(tokens) < 2 {
-				return nil, fmt.Errorf("readwrite: malformed node declaration")
+				return fmt.Errorf("readwrite: malformed node declaration")
 			}
 			name := strings.TrimRight(tokens[1], "{")
 			name = strings.TrimSpace(name)
 			if name == "" {
-				return nil, fmt.Errorf("readwrite: malformed node declaration: missing name")
+				return fmt.Errorf("readwrite: malformed node declaration: missing name")
 			}
 
 			blockContent, end := netCollectBlock(lines, i)
@@ -55,14 +63,14 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 
 			states, err := netParseNodeBlock(name, blockContent)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			if err := bn.AddNode(name); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddNode(name); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
-			if err := bn.SetStates(name, states); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.SetStates(name, states); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 			varMap[name] = &varInfo{card: len(states), states: states}
 
@@ -73,18 +81,18 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 
 			child, parents, err := netParsePotentialHeader(headerLine)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			childInfo := varMap[child]
 			if childInfo == nil {
-				return nil, fmt.Errorf("readwrite: potential references unknown variable %q", child)
+				return fmt.Errorf("readwrite: potential references unknown variable %q", child)
 			}
 
 			for _, p := range parents {
-				if err := bn.AddEdge(p, child); err != nil {
+				if err := builder.AddEdge(p, child); err != nil {
 					if !strings.Contains(err.Error(), "already exists") {
-						return nil, fmt.Errorf("readwrite: %w", err)
+						return fmt.Errorf("readwrite: %w", err)
 					}
 				}
 			}
@@ -97,7 +105,7 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 			for _, p := range parents {
 				pi := varMap[p]
 				if pi == nil {
-					return nil, fmt.Errorf("readwrite: potential references unknown parent %q", p)
+					return fmt.Errorf("readwrite: potential references unknown parent %q", p)
 				}
 				parentInfos = append(parentInfos, struct {
 					card   int
@@ -114,12 +122,12 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 			// Parse data from block.
 			vals, err := netParseDataBlock(blockContent)
 			if err != nil {
-				return nil, fmt.Errorf("readwrite: error parsing potential data for %q: %w", child, err)
+				return fmt.Errorf("readwrite: error parsing potential data for %q: %w", child, err)
 			}
 
 			expectedLen := childInfo.card * numParentConfigs
 			if len(vals) != expectedLen {
-				return nil, fmt.Errorf("readwrite: potential for %q has %d values, expected %d",
+				return fmt.Errorf("readwrite: potential for %q has %d values, expected %d",
 					child, len(vals), expectedLen)
 			}
 
@@ -140,10 +148,10 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 
 			cpd, err := factors.NewTabularCPD(child, childInfo.card, values, parents, evidenceCard)
 			if err != nil {
-				return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+				return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 			}
-			if err := bn.AddCPD(cpd); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.AddCPD(cpd); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 
 		default:
@@ -151,7 +159,7 @@ func ReadNET(r io.Reader) (*models.BayesianNetwork, error) {
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteNET serializes a BayesianNetwork to Hugin NET format.

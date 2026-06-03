@@ -38,17 +38,25 @@ type xmlDefinition struct {
 
 // ReadXMLBIF parses an XMLBIF format file and returns a BayesianNetwork.
 func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
+	bn := models.NewBayesianNetwork()
+	if err := readXMLBIFWith(r, &realBuilder{bn: bn}); err != nil {
+		return nil, err
+	}
+	return bn, nil
+}
+
+// readXMLBIFWith is the testable implementation of ReadXMLBIF. Accepts a
+// bnBuilder interface for mock injection.
+func readXMLBIFWith(r io.Reader, builder bnBuilder) error {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("readwrite: error reading XMLBIF: %w", err)
+		return fmt.Errorf("readwrite: error reading XMLBIF: %w", err)
 	}
 
 	var bif xmlBIF
 	if err := xml.Unmarshal(data, &bif); err != nil {
-		return nil, fmt.Errorf("readwrite: error parsing XMLBIF: %w", err)
+		return fmt.Errorf("readwrite: error parsing XMLBIF: %w", err)
 	}
-
-	bn := models.NewBayesianNetwork()
 
 	// Variable info map for CPD construction.
 	type varInfo struct {
@@ -60,15 +68,15 @@ func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
 	// Add variables.
 	for _, v := range bif.Network.Variables {
 		name := strings.TrimSpace(v.Name)
-		if err := bn.AddNode(name); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddNode(name); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		states := make([]string, len(v.Outcomes))
 		for i, o := range v.Outcomes {
 			states[i] = strings.TrimSpace(o)
 		}
-		if err := bn.SetStates(name, states); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.SetStates(name, states); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		varMap[name] = &varInfo{card: len(states), states: states}
 	}
@@ -78,7 +86,7 @@ func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
 		child := strings.TrimSpace(def.For)
 		childInfo := varMap[child]
 		if childInfo == nil {
-			return nil, fmt.Errorf("readwrite: definition references unknown variable %q", child)
+			return fmt.Errorf("readwrite: definition references unknown variable %q", child)
 		}
 
 		var parents []string
@@ -88,12 +96,12 @@ func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
 			parents = append(parents, p)
 			pi := varMap[p]
 			if pi == nil {
-				return nil, fmt.Errorf("readwrite: definition references unknown parent %q", p)
+				return fmt.Errorf("readwrite: definition references unknown parent %q", p)
 			}
 			evidenceCard = append(evidenceCard, pi.card)
-			if err := bn.AddEdge(p, child); err != nil {
+			if err := builder.AddEdge(p, child); err != nil {
 				if !strings.Contains(err.Error(), "already exists") {
-					return nil, fmt.Errorf("readwrite: %w", err)
+					return fmt.Errorf("readwrite: %w", err)
 				}
 			}
 		}
@@ -106,12 +114,12 @@ func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
 		// Parse table values.
 		vals, err := xmlbifParseFloats(def.Table)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: error parsing table for %q: %w", child, err)
+			return fmt.Errorf("readwrite: error parsing table for %q: %w", child, err)
 		}
 
 		expectedLen := childInfo.card * numParentConfigs
 		if len(vals) != expectedLen {
-			return nil, fmt.Errorf("readwrite: table for %q has %d values, expected %d",
+			return fmt.Errorf("readwrite: table for %q has %d values, expected %d",
 				child, len(vals), expectedLen)
 		}
 
@@ -133,14 +141,14 @@ func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
 
 		cpd, err := factors.NewTabularCPD(child, childInfo.card, values, parents, evidenceCard)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+			return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteXMLBIF serializes a BayesianNetwork to XMLBIF format.

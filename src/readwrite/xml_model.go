@@ -53,17 +53,25 @@ type pgmgoCPD struct {
 
 // ReadXMLNative parses a pgmgo-native XML file and returns a BayesianNetwork.
 func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
+	bn := models.NewBayesianNetwork()
+	if err := readXMLNativeWith(r, &realBuilder{bn: bn}); err != nil {
+		return nil, err
+	}
+	return bn, nil
+}
+
+// readXMLNativeWith is the testable implementation of ReadXMLNative.
+// Accepts a bnBuilder interface for mock injection.
+func readXMLNativeWith(r io.Reader, builder bnBuilder) error {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("readwrite: error reading pgmgo XML: %w", err)
+		return fmt.Errorf("readwrite: error reading pgmgo XML: %w", err)
 	}
 
 	var net pgmgoNetwork
 	if err := xml.Unmarshal(data, &net); err != nil {
-		return nil, fmt.Errorf("readwrite: error parsing pgmgo XML: %w", err)
+		return fmt.Errorf("readwrite: error parsing pgmgo XML: %w", err)
 	}
-
-	bn := models.NewBayesianNetwork()
 
 	type varInfo struct {
 		card   int
@@ -74,8 +82,8 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 	// Add nodes.
 	for _, node := range net.Nodes.Nodes {
 		name := node.Name
-		if err := bn.AddNode(name); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddNode(name); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		var states []string
 		for _, s := range strings.Split(node.States, ",") {
@@ -85,8 +93,8 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 			}
 		}
 		if len(states) > 0 {
-			if err := bn.SetStates(name, states); err != nil {
-				return nil, fmt.Errorf("readwrite: %w", err)
+			if err := builder.SetStates(name, states); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
 			}
 		}
 		varMap[name] = &varInfo{card: len(states), states: states}
@@ -94,9 +102,9 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 
 	// Add edges.
 	for _, edge := range net.Edges.Edges {
-		if err := bn.AddEdge(edge.From, edge.To); err != nil {
+		if err := builder.AddEdge(edge.From, edge.To); err != nil {
 			if !strings.Contains(err.Error(), "already exists") {
-				return nil, fmt.Errorf("readwrite: %w", err)
+				return fmt.Errorf("readwrite: %w", err)
 			}
 		}
 	}
@@ -125,14 +133,14 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 				}
 				v, err := strconv.Atoi(ec)
 				if err != nil {
-					return nil, fmt.Errorf("readwrite: invalid evidence_card %q: %w", ec, err)
+					return fmt.Errorf("readwrite: invalid evidence_card %q: %w", ec, err)
 				}
 				evidenceCard = append(evidenceCard, v)
 			}
 		}
 
 		if len(parents) != len(evidenceCard) {
-			return nil, fmt.Errorf("readwrite: CPD for %q: evidence count %d != evidence_card count %d",
+			return fmt.Errorf("readwrite: CPD for %q: evidence count %d != evidence_card count %d",
 				child, len(parents), len(evidenceCard))
 		}
 
@@ -144,12 +152,12 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 		// Parse values (space-separated).
 		vals, err := xmlbifParseFloats(xc.Values)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: error parsing values for %q: %w", child, err)
+			return fmt.Errorf("readwrite: error parsing values for %q: %w", child, err)
 		}
 
 		expectedLen := childCard * numParentConfigs
 		if len(vals) != expectedLen {
-			return nil, fmt.Errorf("readwrite: CPD for %q has %d values, expected %d",
+			return fmt.Errorf("readwrite: CPD for %q has %d values, expected %d",
 				child, len(vals), expectedLen)
 		}
 
@@ -169,14 +177,14 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 
 		cpd, err := factors.NewTabularCPD(child, childCard, values, parents, evidenceCard)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+			return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteXMLNative serializes a BayesianNetwork to pgmgo-native XML format.

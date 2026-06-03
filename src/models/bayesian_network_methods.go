@@ -215,187 +215,51 @@ func veMAP(factorList []*factors.DiscreteFactor, queryVars []string, evidence ma
 // elimination inference. For each row, variables with nil values are treated
 // as query variables and non-nil variables are treated as evidence. The most
 // likely (MAP) assignment is used to fill in missing values.
+// Predict delegates to predictImpl with the real BN as factorizer and
+// the default VE querier, preserving the public API signature.
 func (bn *BayesianNetwork) Predict(data *tabgo.DataFrame) (*tabgo.DataFrame, error) {
 	if err := bn.CheckModel(); err != nil {
 		return nil, fmt.Errorf("models: Predict requires a valid model: %w", err)
 	}
 
-	markovFactors, err := bn.ToMarkovFactors()
-	if err != nil {
-		return nil, err
-	}
-
 	cols := data.Columns()
-	nRows := data.Len()
-
 	colVals := make(map[string][]any, len(cols))
 	for _, c := range cols {
 		colVals[c] = data.Column(c).Values()
 	}
 
-	resultCols := make(map[string][]any, len(cols))
-	for _, c := range cols {
-		resultCols[c] = make([]any, nRows)
-	}
-
-	for row := 0; row < nRows; row++ {
-		evidence := make(map[string]int)
-		var queryVars []string
-
-		for _, c := range cols {
-			val := colVals[c][row]
-			if val == nil {
-				queryVars = append(queryVars, c)
-			} else {
-				evidence[c] = toInt(val)
-			}
-		}
-
-		if len(queryVars) == 0 {
-			for _, c := range cols {
-				resultCols[c][row] = colVals[c][row]
-			}
-			continue
-		}
-
-		mapAssignment, err := veMAP(markovFactors, queryVars, evidence)
-		if err != nil {
-			return nil, fmt.Errorf("models: Predict row %d: %w", row, err)
-		}
-
-		for _, c := range cols {
-			if colVals[c][row] == nil {
-				resultCols[c][row] = mapAssignment[c]
-			} else {
-				resultCols[c][row] = colVals[c][row]
-			}
-		}
-	}
-
-	seriesMap := make(map[string]*tabgo.Series, len(cols))
-	for _, c := range cols {
-		seriesMap[c] = tabgo.NewSeries(c, resultCols[c])
-	}
-	return tabgo.NewDataFrame(seriesMap), nil
+	return predictImpl(bn, defaultVEQuerier{}, data, bn.Nodes(), colVals)
 }
 
 // PredictProbability returns the probability distribution over missing
 // variables for each row. The returned map contains variable name -> slice
 // of probabilities (one per state, concatenated across rows).
+// PredictProbability delegates to predictProbabilityImpl with the real BN as
+// factorizer and the default VE querier, preserving the public API signature.
 func (bn *BayesianNetwork) PredictProbability(data *tabgo.DataFrame) (map[string][]float64, error) {
 	if err := bn.CheckModel(); err != nil {
 		return nil, fmt.Errorf("models: PredictProbability requires a valid model: %w", err)
 	}
 
-	markovFactors, err := bn.ToMarkovFactors()
-	if err != nil {
-		return nil, err
-	}
-
 	cols := data.Columns()
-	nRows := data.Len()
-
 	colVals := make(map[string][]any, len(cols))
 	for _, c := range cols {
 		colVals[c] = data.Column(c).Values()
 	}
 
-	result := make(map[string][]float64)
-
-	for row := 0; row < nRows; row++ {
-		evidence := make(map[string]int)
-		var queryVars []string
-
-		for _, c := range cols {
-			val := colVals[c][row]
-			if val == nil {
-				queryVars = append(queryVars, c)
-			} else {
-				evidence[c] = toInt(val)
-			}
-		}
-
-		if len(queryVars) == 0 {
-			continue
-		}
-
-		resultFactor, err := veQuery(markovFactors, queryVars, evidence)
-		if err != nil {
-			return nil, fmt.Errorf("models: PredictProbability row %d: %w", row, err)
-		}
-
-		for _, qv := range queryVars {
-			otherVars := make([]string, 0)
-			for _, v := range resultFactor.Variables() {
-				if v != qv {
-					otherVars = append(otherVars, v)
-				}
-			}
-			var marginal *factors.DiscreteFactor
-			if len(otherVars) > 0 {
-				marginal, err = resultFactor.Marginalize(otherVars)
-				if err != nil {
-					return nil, fmt.Errorf("models: PredictProbability marginalize %q: %w", qv, err)
-				}
-			} else {
-				marginal = resultFactor.Copy()
-			}
-			probs := marginal.Values().Data()
-			result[qv] = append(result[qv], probs...)
-		}
-	}
-
-	return result, nil
+	return predictProbabilityImpl(bn, defaultVEQuerier{}, data, colVals)
 }
 
 // GetStateProbability computes P(states) -- the joint probability of a
 // complete or partial state assignment -- using variable elimination.
+// GetStateProbability delegates to getStateProbabilityImpl with the real BN as
+// factorizer and the default VE querier, preserving the public API signature.
 func (bn *BayesianNetwork) GetStateProbability(states map[string]int) (float64, error) {
 	if len(states) == 0 {
 		return 0, fmt.Errorf("models: states must not be empty")
 	}
 
-	markovFactors, err := bn.ToMarkovFactors()
-	if err != nil {
-		return 0, err
-	}
-
-	allNodes := bn.Nodes()
-
-	specified := make(map[string]bool, len(states))
-	for v := range states {
-		specified[v] = true
-	}
-
-	allSpecified := true
-	for _, n := range allNodes {
-		if !specified[n] {
-			allSpecified = false
-			break
-		}
-	}
-
-	if allSpecified {
-		product, err := factors.FactorProduct(markovFactors...)
-		if err != nil {
-			return 0, fmt.Errorf("models: GetStateProbability: %w", err)
-		}
-		return product.GetValue(states), nil
-	}
-
-	specifiedVars := make([]string, 0, len(states))
-	for _, n := range allNodes {
-		if specified[n] {
-			specifiedVars = append(specifiedVars, n)
-		}
-	}
-
-	resultFactor, err := veQuery(markovFactors, specifiedVars, nil)
-	if err != nil {
-		return 0, fmt.Errorf("models: GetStateProbability: %w", err)
-	}
-
-	return resultFactor.GetValue(states), nil
+	return getStateProbabilityImpl(bn, defaultVEQuerier{}, states, bn.Nodes())
 }
 
 // GetMarkovBlanket returns the Markov blanket of a node: its parents,
@@ -427,49 +291,10 @@ func (bn *BayesianNetwork) GetMarkovBlanket(node string) ([]string, error) {
 // map, the incoming edges are removed and the node's CPD is replaced with a
 // delta distribution that assigns probability 1 to the specified state.
 // Returns a new (mutilated) BayesianNetwork; the original is not modified.
+// Do delegates to doImpl with the default CPD creator, preserving the
+// public API signature.
 func (bn *BayesianNetwork) Do(nodes map[string]int) (*BayesianNetwork, error) {
-	if len(nodes) == 0 {
-		return bn.Copy(), nil
-	}
-
-	mutilated := bn.Copy()
-
-	for node, state := range nodes {
-		if !mutilated.dag.HasNode(node) {
-			return nil, fmt.Errorf("models: do-intervention on unknown node %q", node)
-		}
-
-		cpd := mutilated.cpds[node]
-		if cpd == nil {
-			return nil, fmt.Errorf("models: node %q has no CPD for do-intervention", node)
-		}
-
-		card := cpd.VariableCard()
-		if state < 0 || state >= card {
-			return nil, fmt.Errorf("models: do-intervention state %d out of range for %q (card %d)", state, node, card)
-		}
-
-		parents := mutilated.Parents(node)
-		for _, p := range parents {
-			_ = mutilated.dag.RemoveEdge(p, node)
-		}
-
-		vals := make([][]float64, card)
-		for i := 0; i < card; i++ {
-			if i == state {
-				vals[i] = []float64{1.0}
-			} else {
-				vals[i] = []float64{0.0}
-			}
-		}
-		deltaCPD, err := factors.NewTabularCPD(node, card, vals, nil, nil)
-		if err != nil {
-			return nil, fmt.Errorf("models: Do failed to create delta CPD for %q: %w", node, err)
-		}
-		mutilated.cpds[node] = deltaCPD
-	}
-
-	return mutilated, nil
+	return doImpl(bn, nodes, defaultCPDCreator)
 }
 
 // IsIMap checks whether this BayesianNetwork is an I-map (independence map)
@@ -950,96 +775,10 @@ func bifParseFloats(s string) ([]float64, error) {
 	return vals, nil
 }
 
-// FitUpdate performs an online parameter update using weighted counts.
+// FitUpdate delegates to fitUpdateImpl with the default CPD creator,
+// preserving the public API signature.
 func (bn *BayesianNetwork) FitUpdate(data *tabgo.DataFrame, nPrevSamples int) error {
-	if nPrevSamples < 0 {
-		return fmt.Errorf("models: nPrevSamples must be non-negative, got %d", nPrevSamples)
-	}
-
-	nodes := bn.Nodes()
-	nRows := data.Len()
-	if nRows == 0 {
-		return nil
-	}
-
-	colVals := make(map[string][]any, len(nodes))
-	for _, node := range nodes {
-		colVals[node] = data.Column(node).Values()
-	}
-
-	for _, node := range nodes {
-		cpd := bn.cpds[node]
-		if cpd == nil {
-			return fmt.Errorf("models: node %q has no CPD for FitUpdate", node)
-		}
-
-		parents := bn.Parents(node)
-		childCard := cpd.VariableCard()
-		evidenceCard := cpd.EvidenceCard()
-
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
-		}
-
-		counts := make([][]float64, childCard)
-		for i := range counts {
-			counts[i] = make([]float64, numParentConfigs)
-		}
-		parentConfigCounts := make([]float64, numParentConfigs)
-
-		for row := 0; row < nRows; row++ {
-			childVal := toInt(colVals[node][row])
-			if childVal < 0 || childVal >= childCard {
-				continue
-			}
-
-			pc := 0
-			stride := 1
-			valid := true
-			for pi := len(parents) - 1; pi >= 0; pi-- {
-				pVal := toInt(colVals[parents[pi]][row])
-				if pVal < 0 || pVal >= evidenceCard[pi] {
-					valid = false
-					break
-				}
-				pc += pVal * stride
-				stride *= evidenceCard[pi]
-			}
-			if !valid {
-				continue
-			}
-
-			counts[childVal][pc]++
-			parentConfigCounts[pc]++
-		}
-
-		oldFactor := cpd.ToFactor()
-		oldData := oldFactor.Values().Data()
-
-		newValues := make([][]float64, childCard)
-		for cs := 0; cs < childCard; cs++ {
-			newValues[cs] = make([]float64, numParentConfigs)
-			for pc := 0; pc < numParentConfigs; pc++ {
-				oldProb := oldData[cs*numParentConfigs+pc]
-				newCount := counts[cs][pc]
-				total := float64(nPrevSamples) + parentConfigCounts[pc]
-				if total > 0 {
-					newValues[cs][pc] = (float64(nPrevSamples)*oldProb + newCount) / total
-				} else {
-					newValues[cs][pc] = oldProb
-				}
-			}
-		}
-
-		newCPD, err := factors.NewTabularCPD(node, childCard, newValues, parents, evidenceCard)
-		if err != nil {
-			return fmt.Errorf("models: FitUpdate CPD for %q: %w", node, err)
-		}
-		bn.cpds[node] = newCPD
-	}
-
-	return nil
+	return fitUpdateImpl(bn, data, nPrevSamples, defaultCPDCreator)
 }
 
 // GetRandomBayesianNetwork generates a random BayesianNetwork with the

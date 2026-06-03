@@ -50,6 +50,13 @@ func CorrelationScore(edges [][2]string, data *tabgo.DataFrame) float64 {
 // I_x(a, b) using a continued fraction expansion. This is used for computing
 // chi-square CDF p-values.
 func regularizedIncompleteBeta(x, a, b float64) float64 {
+	return betaCFImpl(x, a, b, 1e-30)
+}
+
+// betaCFImpl is the testable implementation of the continued fraction for the
+// regularized incomplete beta function. The tiny parameter controls the underflow
+// guard threshold, allowing tests to inject larger values that trigger the guard.
+func betaCFImpl(x, a, b float64, tiny float64) float64 {
 	if x <= 0 {
 		return 0
 	}
@@ -59,7 +66,7 @@ func regularizedIncompleteBeta(x, a, b float64) float64 {
 
 	// Use the symmetry relation when x > (a+1)/(a+b+2) for better convergence.
 	if x > (a+1)/(a+b+2) {
-		return 1 - regularizedIncompleteBeta(1-x, b, a)
+		return 1 - betaCFImpl(1-x, b, a, tiny)
 	}
 
 	// Compute ln(Beta(a,b)) = lnGamma(a) + lnGamma(b) - lnGamma(a+b)
@@ -71,7 +78,6 @@ func regularizedIncompleteBeta(x, a, b float64) float64 {
 	// Lentz's continued fraction method.
 	const maxIter = 200
 	const eps = 1e-14
-	const tiny = 1e-30
 
 	// The continued fraction for I_x(a,b) / front is:
 	// 1 / (1+ d1/(1+ d2/(1+ ...)))
@@ -180,9 +186,15 @@ func lowerGammaSeries(a, x float64) float64 {
 
 // upperGammaCF computes Q(a,x) = 1 - P(a,x) via continued fraction (Lentz).
 func upperGammaCF(a, x float64) float64 {
+	return upperGammaCFImpl(a, x, 1e-30)
+}
+
+// upperGammaCFImpl is the testable implementation of the continued fraction for
+// the upper incomplete gamma function. The tiny parameter controls the underflow
+// guard threshold, allowing tests to inject larger values that trigger the guard.
+func upperGammaCFImpl(a, x float64, tiny float64) float64 {
 	const maxIter = 200
 	const eps = 1e-14
-	const tiny = 1e-30
 
 	b0 := x + 1 - a
 	c := 1.0 / tiny

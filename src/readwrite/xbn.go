@@ -86,17 +86,25 @@ type xbnPrivDist struct {
 // references and DPIS/DPI with INDEXES attributes for conditional probability
 // distributions.
 func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
+	bn := models.NewBayesianNetwork()
+	if err := readXBNWith(r, &realBuilder{bn: bn}, bn); err != nil {
+		return nil, err
+	}
+	return bn, nil
+}
+
+// readXBNWith is the testable implementation of ReadXBN. Accepts a bnBuilder
+// interface for mock injection.
+func readXBNWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork) error {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("readwrite: error reading XBN: %w", err)
+		return fmt.Errorf("readwrite: error reading XBN: %w", err)
 	}
 
 	var notebook xbnAnalysisNotebook
 	if err := xml.Unmarshal(data, &notebook); err != nil {
-		return nil, fmt.Errorf("readwrite: error parsing XBN: %w", err)
+		return fmt.Errorf("readwrite: error parsing XBN: %w", err)
 	}
-
-	bn := models.NewBayesianNetwork()
 
 	type varInfo struct {
 		card   int
@@ -115,11 +123,11 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 		if len(states) == 0 {
 			states = []string{"s0", "s1"} // default binary
 		}
-		if err := bn.AddNode(name); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddNode(name); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
-		if err := bn.SetStates(name, states); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.SetStates(name, states); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 		varMap[name] = &varInfo{card: len(states), states: states}
 		nodeOrder = append(nodeOrder, name)
@@ -127,9 +135,9 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 
 	// Add arcs.
 	for _, arc := range notebook.BNMODEL.StaticProp.ArcList.Arcs {
-		if err := bn.AddEdge(arc.Parent, arc.Child); err != nil {
+		if err := builder.AddEdge(arc.Parent, arc.Child); err != nil {
 			if !strings.Contains(err.Error(), "already exists") {
-				return nil, fmt.Errorf("readwrite: %w", err)
+				return fmt.Errorf("readwrite: %w", err)
 			}
 		}
 	}
@@ -174,7 +182,7 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 			for _, dpi := range dist.DPIs {
 				vals, err := xmlbifParseFloats(dpi.Values)
 				if err != nil {
-					return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
+					return fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
 				}
 				allVals = append(allVals, vals...)
 			}
@@ -206,7 +214,7 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 				for _, dpi := range dist.DPIs {
 					vals, err := xmlbifParseFloats(dpi.Values)
 					if err != nil {
-						return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
+						return fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
 					}
 					if len(vals) != childInfo.card {
 						continue
@@ -247,7 +255,7 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 				for _, dpi := range dist.DPIs {
 					vals, err := xmlbifParseFloats(dpi.Values)
 					if err != nil {
-						return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
+						return fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
 					}
 					allVals = append(allVals, vals...)
 				}
@@ -275,10 +283,10 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 
 		cpd, err := factors.NewTabularCPD(child, childInfo.card, values, parents, evidenceCard)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+			return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
@@ -295,14 +303,14 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 		}
 		cpd, err := factors.NewTabularCPD(name, info.card, values, nil, nil)
 		if err != nil {
-			return nil, fmt.Errorf("readwrite: failed to create default CPD for %q: %w", name, err)
+			return fmt.Errorf("readwrite: failed to create default CPD for %q: %w", name, err)
 		}
-		if err := bn.AddCPD(cpd); err != nil {
-			return nil, fmt.Errorf("readwrite: %w", err)
+		if err := builder.AddCPD(cpd); err != nil {
+			return fmt.Errorf("readwrite: %w", err)
 		}
 	}
 
-	return bn, nil
+	return nil
 }
 
 // WriteXBN serializes a BayesianNetwork to Microsoft XBN format with full
