@@ -376,3 +376,91 @@ func doImpl(bn *BayesianNetwork, nodes map[string]int, createCPD cpdCreator) (*B
 
 	return mutilated, nil
 }
+
+// nbFitImpl is the testable implementation of NaiveBayes.Fit. Accepts a
+// cpdCreator function to allow injection of failing CPD creators in tests
+// for defensive error path coverage.
+func nbFitImpl(nb *NaiveBayes, data *tabgo.DataFrame, createCPD cpdCreator) error {
+	if data == nil {
+		return fmt.Errorf("models: data must not be nil")
+	}
+	if data.Len() == 0 {
+		return fmt.Errorf("models: data must not be empty")
+	}
+
+	nRows := data.Len()
+	classVals := data.Column(nb.classVariable).Int()
+
+	classCard := 0
+	for _, v := range classVals {
+		if v < 0 {
+			return fmt.Errorf("models: negative class value %d", v)
+		}
+		if v+1 > classCard {
+			classCard = v + 1
+		}
+	}
+
+	classCounts := make([]float64, classCard)
+	for _, v := range classVals {
+		classCounts[v]++
+	}
+
+	classProbs := make([][]float64, classCard)
+	for i := 0; i < classCard; i++ {
+		classProbs[i] = []float64{classCounts[i] / float64(nRows)}
+	}
+	classCPD, err := createCPD(nb.classVariable, classCard, classProbs, nil, nil)
+	if err != nil {
+		return fmt.Errorf("models: failed to create class CPD: %w", err)
+	}
+	if err := nb.BayesianNetwork.AddCPD(classCPD); err != nil {
+		return fmt.Errorf("models: failed to add class CPD: %w", err)
+	}
+
+	for _, feat := range nb.features {
+		featVals := data.Column(feat).Int()
+
+		featCard := 0
+		for _, v := range featVals {
+			if v < 0 {
+				return fmt.Errorf("models: negative feature value %d for %q", v, feat)
+			}
+			if v+1 > featCard {
+				featCard = v + 1
+			}
+		}
+
+		counts := make([][]float64, featCard)
+		for i := range counts {
+			counts[i] = make([]float64, classCard)
+		}
+		for row := 0; row < nRows; row++ {
+			counts[featVals[row]][classVals[row]]++
+		}
+
+		for c := 0; c < classCard; c++ {
+			colSum := classCounts[c]
+			if colSum == 0 {
+				for f := 0; f < featCard; f++ {
+					counts[f][c] = 1.0 / float64(featCard)
+				}
+			} else {
+				for f := 0; f < featCard; f++ {
+					counts[f][c] /= colSum
+				}
+			}
+		}
+
+		cpd, err := createCPD(feat, featCard, counts,
+			[]string{nb.classVariable}, []int{classCard})
+		if err != nil {
+			return fmt.Errorf("models: failed to create CPD for %q: %w", feat, err)
+		}
+		if err := nb.BayesianNetwork.AddCPD(cpd); err != nil {
+			return fmt.Errorf("models: failed to add CPD for %q: %w", feat, err)
+		}
+	}
+
+	return nil
+}

@@ -80,97 +80,10 @@ func (nb *NaiveBayes) Features() []string {
 // Fit estimates parameters from data using maximum likelihood estimation (MLE).
 // The DataFrame must contain columns for the class variable and all features.
 // All values must be non-negative integers representing discrete state indices.
+// Fit delegates to nbFitImpl with the default CPD creator, preserving the
+// public API signature.
 func (nb *NaiveBayes) Fit(data *tabgo.DataFrame) error {
-	if data == nil {
-		return fmt.Errorf("models: data must not be nil")
-	}
-	if data.Len() == 0 {
-		return fmt.Errorf("models: data must not be empty")
-	}
-
-	nRows := data.Len()
-	classVals := data.Column(nb.classVariable).Int()
-
-	// Determine class cardinality.
-	classCard := 0
-	for _, v := range classVals {
-		if v < 0 {
-			return fmt.Errorf("models: negative class value %d", v)
-		}
-		if v+1 > classCard {
-			classCard = v + 1
-		}
-	}
-
-	// Count class occurrences.
-	classCounts := make([]float64, classCard)
-	for _, v := range classVals {
-		classCounts[v]++
-	}
-
-	// Build class CPD (prior).
-	classProbs := make([][]float64, classCard)
-	for i := 0; i < classCard; i++ {
-		classProbs[i] = []float64{classCounts[i] / float64(nRows)}
-	}
-	classCPD, err := factors.NewTabularCPD(nb.classVariable, classCard, classProbs, nil, nil)
-	if err != nil {
-		return fmt.Errorf("models: failed to create class CPD: %w", err)
-	}
-	if err := nb.BayesianNetwork.AddCPD(classCPD); err != nil {
-		return fmt.Errorf("models: failed to add class CPD: %w", err)
-	}
-
-	// For each feature, build a CPD conditioned on the class.
-	for _, feat := range nb.features {
-		featVals := data.Column(feat).Int()
-
-		// Determine feature cardinality.
-		featCard := 0
-		for _, v := range featVals {
-			if v < 0 {
-				return fmt.Errorf("models: negative feature value %d for %q", v, feat)
-			}
-			if v+1 > featCard {
-				featCard = v + 1
-			}
-		}
-
-		// Count joint occurrences: counts[featState][classState].
-		counts := make([][]float64, featCard)
-		for i := range counts {
-			counts[i] = make([]float64, classCard)
-		}
-		for row := 0; row < nRows; row++ {
-			counts[featVals[row]][classVals[row]]++
-		}
-
-		// Normalize each column (class state) to sum to 1.
-		for c := 0; c < classCard; c++ {
-			colSum := classCounts[c]
-			if colSum == 0 {
-				// Uniform distribution if no samples for this class.
-				for f := 0; f < featCard; f++ {
-					counts[f][c] = 1.0 / float64(featCard)
-				}
-			} else {
-				for f := 0; f < featCard; f++ {
-					counts[f][c] /= colSum
-				}
-			}
-		}
-
-		cpd, err := factors.NewTabularCPD(feat, featCard, counts,
-			[]string{nb.classVariable}, []int{classCard})
-		if err != nil {
-			return fmt.Errorf("models: failed to create CPD for %q: %w", feat, err)
-		}
-		if err := nb.BayesianNetwork.AddCPD(cpd); err != nil {
-			return fmt.Errorf("models: failed to add CPD for %q: %w", feat, err)
-		}
-	}
-
-	return nil
+	return nbFitImpl(nb, data, defaultCPDCreator)
 }
 
 // PredictProbability returns the posterior probability of each class for each

@@ -141,6 +141,86 @@ func eliminateVariableImpl(
 	return append(remaining, marginalized), nil
 }
 
+// identificationChecker abstracts identification criterion checks
+// to enable testing all dispatch branches in IdentificationMethod.
+type identificationChecker interface {
+	canBackdoor(treatment, outcome string) bool
+	canFrontdoor(treatment, outcome string) bool
+	canIV(treatment, outcome string) bool
+}
+
+// defaultIdentificationChecker delegates to CausalInference methods.
+type defaultIdentificationChecker struct {
+	ci *CausalInference
+}
+
+func (d defaultIdentificationChecker) canBackdoor(treatment, outcome string) bool {
+	return d.ci.canIdentifyByBackdoor(treatment, outcome)
+}
+
+func (d defaultIdentificationChecker) canFrontdoor(treatment, outcome string) bool {
+	return d.ci.canIdentifyByFrontdoor(treatment, outcome)
+}
+
+func (d defaultIdentificationChecker) canIV(treatment, outcome string) bool {
+	return d.ci.canIdentifyByIV(treatment, outcome)
+}
+
+// identificationMethodImpl is the testable implementation of IdentificationMethod.
+func identificationMethodImpl(treatment, outcome string, ic identificationChecker) string {
+	if ic.canBackdoor(treatment, outcome) {
+		return "backdoor"
+	}
+	if ic.canFrontdoor(treatment, outcome) {
+		return "frontdoor"
+	}
+	if ic.canIV(treatment, outcome) {
+		return "iv"
+	}
+	return "none"
+}
+
+// maxEliminateVariableImpl is the testable implementation of maxEliminateVariable.
+// It accepts a factorMultiplier interface to allow injection of failing
+// mocks in tests for defensive error path coverage.
+func maxEliminateVariableImpl(
+	factorList []*factors.DiscreteFactor,
+	variable string,
+	fm factorMultiplier,
+) ([]*factors.DiscreteFactor, error) {
+	var containing []*factors.DiscreteFactor
+	var remaining []*factors.DiscreteFactor
+
+	for _, f := range factorList {
+		if varSet(f)[variable] {
+			containing = append(containing, f)
+		} else {
+			remaining = append(remaining, f)
+		}
+	}
+
+	if len(containing) == 0 {
+		return factorList, nil
+	}
+
+	product, err := fm.Product(containing...)
+	if err != nil {
+		return nil, err
+	}
+
+	prodVars := product.Variables()
+	if len(prodVars) == 1 && prodVars[0] == variable {
+		return remaining, nil
+	}
+
+	maximized, err := maxMarginalize(product, variable)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(remaining, maximized), nil
+}
+
 // reduceAllImpl is the testable implementation of reduceAll.
 // It accepts a factorReducer interface to allow injection of failing
 // mocks in tests for defensive error path coverage.

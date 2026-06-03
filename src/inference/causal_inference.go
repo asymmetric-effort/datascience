@@ -612,16 +612,7 @@ func (ci *CausalInference) canIdentifyByIV(treatment, outcome string) bool {
 // estimating the causal effect of treatment on outcome.
 // Returns "backdoor", "frontdoor", "iv", or "none".
 func (ci *CausalInference) IdentificationMethod(treatment, outcome string) string {
-	if ci.canIdentifyByBackdoor(treatment, outcome) {
-		return "backdoor"
-	}
-	if ci.canIdentifyByFrontdoor(treatment, outcome) {
-		return "frontdoor"
-	}
-	if ci.canIdentifyByIV(treatment, outcome) {
-		return "iv"
-	}
-	return "none"
+	return identificationMethodImpl(treatment, outcome, defaultIdentificationChecker{ci: ci})
 }
 
 // EstimateATE estimates the Average Treatment Effect from observational data

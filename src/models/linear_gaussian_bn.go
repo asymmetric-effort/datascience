@@ -141,6 +141,16 @@ func (lgbn *LinearGaussianBayesianNetwork) Save(filename string) error {
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
+	if err := lgWriteImpl(w, lgbn); err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
+// lgWriteImpl is the testable implementation of Save. It accepts a bifWriter
+// interface to allow injection of failing writers in tests for defensive
+// write-error path coverage.
+func lgWriteImpl(w bifWriter, lgbn *LinearGaussianBayesianNetwork) error {
 	if _, err := fmt.Fprintf(w, "network lg_bayesian_network {\n}\n"); err != nil {
 		return err
 	}
@@ -192,7 +202,7 @@ func (lgbn *LinearGaussianBayesianNetwork) Save(filename string) error {
 		}
 	}
 
-	return w.Flush()
+	return nil
 }
 
 // Load reads a LinearGaussianBayesianNetwork from a file written by Save.
