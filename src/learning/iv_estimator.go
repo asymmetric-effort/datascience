@@ -88,8 +88,23 @@ func (iv *IVEstimator) Fit(data *tabgo.DataFrame) error {
 	return nil
 }
 
+// Estimate is an alias for Fit that matches pgmpy's IVEstimator.estimate()
+// interface. It performs 2SLS estimation on the provided data and returns the
+// estimated average treatment effect.
+func (iv *IVEstimator) Estimate(data *tabgo.DataFrame) (float64, error) {
+	if err := iv.Fit(data); err != nil {
+		return 0, err
+	}
+	return iv.ate, nil
+}
+
 // ATE returns the estimated average treatment effect. Returns 0 if Fit has
 // not been called.
 func (iv *IVEstimator) ATE() float64 {
 	return iv.ate
+}
+
+// Fitted returns true if the estimator has been fitted via Fit or Estimate.
+func (iv *IVEstimator) Fitted() bool {
+	return iv.fitted
 }

@@ -73,6 +73,26 @@ func (be *BayesianEstimator) GetParameters(node string) (*factors.TabularCPD, er
 	return cpd, nil
 }
 
+// EstimateCPD estimates and returns the CPD for a single node using Bayesian
+// estimation with the configured prior. Unlike GetParameters (which retrieves
+// an already-estimated CPD from the network), EstimateCPD always recomputes the
+// CPD from data. This matches pgmpy's BayesianEstimator.estimate_cpd(node).
+func (be *BayesianEstimator) EstimateCPD(node string) (*factors.TabularCPD, error) {
+	// Validate that the node exists.
+	found := false
+	for _, n := range be.bn.Nodes() {
+		if n == node {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("learning: node %q not found in BayesianNetwork", node)
+	}
+
+	return be.estimateNode(node)
+}
+
 // estimateNode computes the Bayesian-estimated CPD for a single node.
 func (be *BayesianEstimator) estimateNode(node string) (*factors.TabularCPD, error) {
 	states := be.bn.GetStates(node)

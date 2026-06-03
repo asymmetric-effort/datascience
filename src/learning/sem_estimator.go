@@ -132,6 +132,37 @@ func (se *SEMEstimator) Estimate() error {
 	return nil
 }
 
+// Fit sets new data on the estimator and runs Estimate. This matches the pgmpy
+// SEMEstimator.fit(data) pattern where data can be provided at fit time rather
+// than only at construction.
+func (se *SEMEstimator) Fit(data *tabgo.DataFrame) error {
+	se.data = data
+	return se.Estimate()
+}
+
+// GetParameters returns a map from variable name to a slice of [coefficients...,
+// intercept, variance] for all equations in the SEM. This matches pgmpy's
+// SEMEstimator.get_parameters().
+func (se *SEMEstimator) GetParameters() (map[string][]float64, error) {
+	if se.sem == nil {
+		return nil, fmt.Errorf("learning: SEM is nil")
+	}
+
+	vars := se.sem.Variables()
+	result := make(map[string][]float64, len(vars))
+	for _, variable := range vars {
+		eq := se.sem.GetEquation(variable)
+		if eq == nil {
+			return nil, fmt.Errorf("learning: no equation found for variable %q", variable)
+		}
+		params := make([]float64, 0, len(eq.Coefficients)+2)
+		params = append(params, eq.Coefficients...)
+		params = append(params, eq.Intercept, eq.Variance)
+		result[variable] = params
+	}
+	return result, nil
+}
+
 // GetCoefficients returns the estimated coefficients, intercept, and error
 // variance for the given variable's structural equation.
 // Returns (betas, intercept, variance, error).

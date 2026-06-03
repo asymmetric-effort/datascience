@@ -65,6 +65,75 @@ func sepSetKey(u, v string) [2]string {
 	return [2]string{u, v}
 }
 
+// BuildSkeleton runs only the skeleton discovery phase of the PC algorithm and
+// returns the undirected skeleton as a PDAG (with only undirected edges) along
+// with the separating sets discovered during skeleton construction.
+//
+// This matches pgmpy's PC.build_skeleton() method and is useful when you want
+// to inspect or modify the skeleton before orientation.
+func (pc *PCAlgorithm) BuildSkeleton() (*graphgo.PDAG, map[[2]string][]string, error) {
+	variables := pc.data.Columns()
+	if len(variables) < 2 {
+		return nil, nil, fmt.Errorf("learning: PC algorithm requires at least 2 variables, got %d", len(variables))
+	}
+
+	pdag := graphgo.NewPDAG()
+	for _, v := range variables {
+		pdag.AddNode(v)
+	}
+	for i := 0; i < len(variables); i++ {
+		for j := i + 1; j < len(variables); j++ {
+			pdag.AddUndirectedEdge(variables[i], variables[j])
+		}
+	}
+
+	sepSets := make(map[[2]string][]string)
+
+	for d := 0; ; d++ {
+		if pc.maxCondSetSize >= 0 && d > pc.maxCondSetSize {
+			break
+		}
+
+		maxDegree := 0
+		for _, node := range variables {
+			deg := pc.adjacencyCount(pdag, node)
+			if deg > maxDegree {
+				maxDegree = deg
+			}
+		}
+		if d > maxDegree {
+			break
+		}
+
+		edges := pdag.UndirectedEdges()
+
+		for _, edge := range edges {
+			x, y := edge[0], edge[1]
+			if !pdag.HasUndirectedEdge(x, y) {
+				continue
+			}
+
+			adjX := pc.undirectedNeighbors(pdag, x)
+			adjXMinusY := removeFromSlice(adjX, y)
+			if found, subset := pc.findSepSet(x, y, adjXMinusY, d); found {
+				pdag.RemoveUndirectedEdge(x, y)
+				sepSets[sepSetKey(x, y)] = subset
+				continue
+			}
+
+			adjY := pc.undirectedNeighbors(pdag, y)
+			adjYMinusX := removeFromSlice(adjY, x)
+			if found, subset := pc.findSepSet(x, y, adjYMinusX, d); found {
+				pdag.RemoveUndirectedEdge(x, y)
+				sepSets[sepSetKey(x, y)] = subset
+				continue
+			}
+		}
+	}
+
+	return pdag, sepSets, nil
+}
+
 // Estimate runs the PC algorithm and returns a PDAG (CPDAG) representing the
 // learned Markov equivalence class.
 //

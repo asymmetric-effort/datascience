@@ -251,6 +251,285 @@ func (ai *ApproxInference) GetDistribution(nSamples int) (*factors.DiscreteFacto
 	return factors.NewDiscreteFactor(allVars, allCard, counts)
 }
 
+// QueryRejection approximates P(queryVars | evidence) using rejection
+// sampling. It draws samples from the prior (product of all factors) and
+// rejects those that do not match the observed evidence.
+//
+// This is simpler but less efficient than likelihood-weighted sampling,
+// especially when evidence is unlikely.
+func (ai *ApproxInference) QueryRejection(queryVars []string, evidence map[string]int, nSamples int) (*factors.DiscreteFactor, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("approx_inference: queryVars must not be empty")
+	}
+	if nSamples <= 0 {
+		return nil, fmt.Errorf("approx_inference: nSamples must be positive")
+	}
+
+	cardMap := make(map[string]int)
+	var allVars []string
+	for _, f := range ai.factors {
+		vars := f.Variables()
+		card := f.Cardinality()
+		for i, v := range vars {
+			if _, ok := cardMap[v]; !ok {
+				cardMap[v] = card[i]
+				allVars = append(allVars, v)
+			}
+		}
+	}
+
+	for _, v := range queryVars {
+		if _, ok := cardMap[v]; !ok {
+			return nil, fmt.Errorf("approx_inference: query variable %q not found in any factor", v)
+		}
+	}
+	for v, val := range evidence {
+		c, ok := cardMap[v]
+		if !ok {
+			return nil, fmt.Errorf("approx_inference: evidence variable %q not found in any factor", v)
+		}
+		if val < 0 || val >= c {
+			return nil, fmt.Errorf("approx_inference: evidence value %d out of range for variable %q (card %d)", val, v, c)
+		}
+	}
+
+	queryCard := make([]int, len(queryVars))
+	for i, v := range queryVars {
+		queryCard[i] = cardMap[v]
+	}
+	querySize := 1
+	for _, c := range queryCard {
+		querySize *= c
+	}
+	counts := make([]float64, querySize)
+
+	allCard := make([]int, len(allVars))
+	for i, v := range allVars {
+		allCard[i] = cardMap[v]
+	}
+
+	assignment := make(map[string]int, len(allVars))
+	accepted := 0
+
+	for s := 0; s < nSamples; s++ {
+		// Draw uniform random assignment.
+		for i, v := range allVars {
+			assignment[v] = ai.rng.Intn(allCard[i])
+		}
+
+		// Compute weight from factor product.
+		weight := 1.0
+		for _, f := range ai.factors {
+			fVars := f.Variables()
+			fAssign := make(map[string]int, len(fVars))
+			for _, fv := range fVars {
+				fAssign[fv] = assignment[fv]
+			}
+			weight *= f.GetValue(fAssign)
+		}
+		if weight == 0 {
+			continue
+		}
+
+		// Reject if evidence doesn't match.
+		match := true
+		for v, val := range evidence {
+			if assignment[v] != val {
+				match = false
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+
+		accepted++
+		queryFlat := 0
+		stride := 1
+		for i := len(queryVars) - 1; i >= 0; i-- {
+			queryFlat += assignment[queryVars[i]] * stride
+			stride *= queryCard[i]
+		}
+		counts[queryFlat] += weight
+	}
+
+	if accepted == 0 {
+		return nil, fmt.Errorf("approx_inference: no samples matched evidence; try increasing nSamples")
+	}
+
+	sum := 0.0
+	for _, c := range counts {
+		sum += c
+	}
+	if sum == 0 {
+		return nil, fmt.Errorf("approx_inference: all accepted samples had zero weight")
+	}
+	for i := range counts {
+		counts[i] /= sum
+	}
+
+	return factors.NewDiscreteFactor(queryVars, queryCard, counts)
+}
+
+// QueryGibbs approximates P(queryVars | evidence) using Gibbs sampling
+// (Markov Chain Monte Carlo). It initializes all non-evidence variables
+// randomly, then iteratively resamples each variable from its full
+// conditional distribution. After a burn-in period, samples are collected.
+func (ai *ApproxInference) QueryGibbs(queryVars []string, evidence map[string]int, nSamples int, burnIn int) (*factors.DiscreteFactor, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("approx_inference: queryVars must not be empty")
+	}
+	if nSamples <= 0 {
+		return nil, fmt.Errorf("approx_inference: nSamples must be positive")
+	}
+	if burnIn < 0 {
+		burnIn = 0
+	}
+
+	cardMap := make(map[string]int)
+	var allVars []string
+	for _, f := range ai.factors {
+		vars := f.Variables()
+		card := f.Cardinality()
+		for i, v := range vars {
+			if _, ok := cardMap[v]; !ok {
+				cardMap[v] = card[i]
+				allVars = append(allVars, v)
+			}
+		}
+	}
+
+	for _, v := range queryVars {
+		if _, ok := cardMap[v]; !ok {
+			return nil, fmt.Errorf("approx_inference: query variable %q not found in any factor", v)
+		}
+	}
+	for v, val := range evidence {
+		c, ok := cardMap[v]
+		if !ok {
+			return nil, fmt.Errorf("approx_inference: evidence variable %q not found in any factor", v)
+		}
+		if val < 0 || val >= c {
+			return nil, fmt.Errorf("approx_inference: evidence value %d out of range for variable %q (card %d)", val, v, c)
+		}
+	}
+
+	// Determine free (non-evidence) variables.
+	evidenceSet := make(map[string]bool, len(evidence))
+	for v := range evidence {
+		evidenceSet[v] = true
+	}
+	var freeVars []string
+	for _, v := range allVars {
+		if !evidenceSet[v] {
+			freeVars = append(freeVars, v)
+		}
+	}
+
+	// Precompute: for each variable, which factors involve it?
+	varFactors := make(map[string][]*factors.DiscreteFactor)
+	for _, f := range ai.factors {
+		for _, v := range f.Variables() {
+			varFactors[v] = append(varFactors[v], f)
+		}
+	}
+
+	// Initialize assignment.
+	assignment := make(map[string]int, len(allVars))
+	for v, val := range evidence {
+		assignment[v] = val
+	}
+	for _, v := range freeVars {
+		assignment[v] = ai.rng.Intn(cardMap[v])
+	}
+
+	// Query result accumulators.
+	queryCard := make([]int, len(queryVars))
+	for i, v := range queryVars {
+		queryCard[i] = cardMap[v]
+	}
+	querySize := 1
+	for _, c := range queryCard {
+		querySize *= c
+	}
+	counts := make([]float64, querySize)
+
+	totalIter := burnIn + nSamples
+	for iter := 0; iter < totalIter; iter++ {
+		// Resample each free variable from its full conditional.
+		for _, v := range freeVars {
+			card := cardMap[v]
+			probs := make([]float64, card)
+			for s := 0; s < card; s++ {
+				assignment[v] = s
+				p := 1.0
+				for _, f := range varFactors[v] {
+					fVars := f.Variables()
+					fAssign := make(map[string]int, len(fVars))
+					for _, fv := range fVars {
+						fAssign[fv] = assignment[fv]
+					}
+					p *= f.GetValue(fAssign)
+				}
+				probs[s] = p
+			}
+
+			// Normalize and sample.
+			sum := 0.0
+			for _, p := range probs {
+				sum += p
+			}
+			if sum == 0 {
+				assignment[v] = ai.rng.Intn(card)
+				continue
+			}
+			r := ai.rng.Float64() * sum
+			cumulative := 0.0
+			chosen := card - 1
+			for s := 0; s < card; s++ {
+				cumulative += probs[s]
+				if r <= cumulative {
+					chosen = s
+					break
+				}
+			}
+			assignment[v] = chosen
+		}
+
+		// Collect sample after burn-in.
+		if iter >= burnIn {
+			queryFlat := 0
+			stride := 1
+			for i := len(queryVars) - 1; i >= 0; i-- {
+				queryFlat += assignment[queryVars[i]] * stride
+				stride *= queryCard[i]
+			}
+			counts[queryFlat]++
+		}
+	}
+
+	// Normalize.
+	sum := 0.0
+	for _, c := range counts {
+		sum += c
+	}
+	if sum == 0 {
+		return nil, fmt.Errorf("approx_inference: Gibbs sampling produced no valid samples")
+	}
+	for i := range counts {
+		counts[i] /= sum
+	}
+
+	return factors.NewDiscreteFactor(queryVars, queryCard, counts)
+}
+
+// GetDistributionWithEvidence approximates the distribution over queryVars
+// given evidence, using the specified number of samples. This extends
+// GetDistribution to support evidence conditioning.
+func (ai *ApproxInference) GetDistributionWithEvidence(queryVars []string, evidence map[string]int, nSamples int) (*factors.DiscreteFactor, error) {
+	return ai.Query(queryVars, evidence, nSamples)
+}
+
 // MAPQuery approximates the MAP (Maximum A Posteriori) assignment for
 // queryVars given evidence, using sampling to find the assignment with
 // the highest approximate probability.

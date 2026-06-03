@@ -502,6 +502,21 @@ func (bp *BeliefPropagation) IsCalibrated() bool {
 	return bp.calibrated
 }
 
+// GetCliqueBeliefs returns a map from clique index to calibrated clique belief.
+// Returns nil values for uncalibrated cliques. This corresponds to pgmpy's
+// get_clique_beliefs().
+func (bp *BeliefPropagation) GetCliqueBeliefs() map[int]*factors.DiscreteFactor {
+	result := make(map[int]*factors.DiscreteFactor, len(bp.cliques))
+	for i := range bp.cliques {
+		if i < len(bp.potentials) && bp.potentials[i] != nil {
+			result[i] = bp.potentials[i].Copy()
+		} else {
+			result[i] = nil
+		}
+	}
+	return result
+}
+
 // MaxCalibrate runs the collect-distribute message passing algorithm using
 // max-product messages instead of sum-product. After max-calibration, each
 // clique potential represents the max-marginal over its variables.

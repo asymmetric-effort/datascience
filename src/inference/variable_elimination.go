@@ -393,6 +393,120 @@ func maxMarginalize(f *factors.DiscreteFactor, variable string) (*factors.Discre
 	return factors.NewDiscreteFactor(newVars, newCard, newValues)
 }
 
+// VirtualEvidence represents soft evidence for a variable. Instead of
+// observing a specific state, the caller provides a vector of likelihood
+// ratios (one per state). For example, VirtualEvidence{"X", []float64{0.6, 0.4}}
+// means the observation is 60% consistent with X=0 and 40% with X=1.
+type VirtualEvidence struct {
+	Variable string
+	Values   []float64
+}
+
+// QueryWithVirtualEvidence computes P(queryVars | evidence, virtualEvidence)
+// via variable elimination. Virtual evidence is incorporated by multiplying
+// each virtual evidence factor into the working factor list before elimination.
+func (ve *VariableElimination) QueryWithVirtualEvidence(
+	queryVars []string,
+	evidence map[string]int,
+	virtualEvidence []VirtualEvidence,
+) (*factors.DiscreteFactor, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("inference: queryVars must not be empty")
+	}
+
+	// Deep-copy factors.
+	workingFactors := make([]*factors.DiscreteFactor, len(ve.factors))
+	for i, f := range ve.factors {
+		workingFactors[i] = f.Copy()
+	}
+
+	// Incorporate virtual evidence as soft factors.
+	for _, vev := range virtualEvidence {
+		if len(vev.Values) == 0 {
+			return nil, fmt.Errorf("inference: virtual evidence for %q has empty values", vev.Variable)
+		}
+		veFactor, err := factors.NewDiscreteFactor(
+			[]string{vev.Variable},
+			[]int{len(vev.Values)},
+			vev.Values,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("inference: failed to create virtual evidence factor for %q: %w", vev.Variable, err)
+		}
+		workingFactors = append(workingFactors, veFactor)
+	}
+
+	// Reduce all factors by hard evidence.
+	reduced, err := reduceAll(workingFactors, evidence)
+	if err != nil {
+		return nil, fmt.Errorf("inference: evidence reduction failed: %w", err)
+	}
+
+	allVars := collectVariables(reduced)
+	keepSet := make(map[string]bool, len(queryVars)+len(evidence))
+	for _, v := range queryVars {
+		keepSet[v] = true
+	}
+	for v := range evidence {
+		keepSet[v] = true
+	}
+
+	var eliminateVars []string
+	for v := range allVars {
+		if !keepSet[v] {
+			eliminateVars = append(eliminateVars, v)
+		}
+	}
+
+	heuristic := ve.heuristic
+	if heuristic == "" {
+		heuristic = "min_neighbors"
+	}
+	order, err := GetEliminationOrder(reduced, eliminateVars, heuristic)
+	if err != nil {
+		return nil, fmt.Errorf("inference: elimination order failed: %w", err)
+	}
+
+	for _, elimVar := range order {
+		reduced, err = eliminateVariable(reduced, elimVar)
+		if err != nil {
+			return nil, fmt.Errorf("inference: failed to eliminate %q: %w", elimVar, err)
+		}
+	}
+
+	if len(reduced) == 0 {
+		return nil, fmt.Errorf("inference: no factors remain after elimination")
+	}
+
+	result, err := factors.FactorProduct(reduced...)
+	if err != nil {
+		return nil, fmt.Errorf("inference: final product failed: %w", err)
+	}
+
+	result.Normalize()
+	return result, nil
+}
+
+// QueryMarginals computes individual marginal distributions P(v | evidence)
+// for each variable in queryVars separately, rather than a single joint
+// distribution. This corresponds to pgmpy's query(..., joint=False).
+// Returns a map from variable name to its marginal factor.
+func (ve *VariableElimination) QueryMarginals(queryVars []string, evidence map[string]int) (map[string]*factors.DiscreteFactor, error) {
+	if len(queryVars) == 0 {
+		return nil, fmt.Errorf("inference: queryVars must not be empty")
+	}
+
+	result := make(map[string]*factors.DiscreteFactor, len(queryVars))
+	for _, v := range queryVars {
+		marginal, err := ve.Query([]string{v}, evidence)
+		if err != nil {
+			return nil, fmt.Errorf("inference: marginal query for %q failed: %w", v, err)
+		}
+		result[v] = marginal
+	}
+	return result, nil
+}
+
 // InducedGraph returns the induced graph (also called the filled graph) that
 // results from eliminating variables in the given order. Two variables are
 // connected in the induced graph if they appear together in the same factor

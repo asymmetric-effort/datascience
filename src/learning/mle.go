@@ -104,6 +104,13 @@ func (mle *MaximumLikelihoodEstimator) GetParameters(node string) (*factors.Tabu
 	return mle.estimateNode(node)
 }
 
+// EstimateCPD estimates and returns the CPD for a single node using maximum
+// likelihood estimation. This is an alias for GetParameters that matches the
+// pgmpy method name MaximumLikelihoodEstimator.estimate_cpd(node).
+func (mle *MaximumLikelihoodEstimator) EstimateCPD(node string) (*factors.TabularCPD, error) {
+	return mle.GetParameters(node)
+}
+
 // estimateNode computes the MLE CPD for a single node.
 func (mle *MaximumLikelihoodEstimator) estimateNode(node string) (*factors.TabularCPD, error) {
 	parents := mle.bn.Parents(node) // sorted

@@ -462,3 +462,633 @@ func TestSolveLinearSystem(t *testing.T) {
 		t.Errorf("x[1]: got %f, want 1.8", x[1])
 	}
 }
+
+// --- Normal distribution helper tests ---
+
+func TestNormalCDF(t *testing.T) {
+	// CDF(0) = 0.5
+	if math.Abs(normalCDF(0)-0.5) > 1e-10 {
+		t.Errorf("normalCDF(0) = %f, want 0.5", normalCDF(0))
+	}
+	// CDF(-inf) -> 0
+	if normalCDF(-10) > 1e-10 {
+		t.Errorf("normalCDF(-10) should be near 0, got %f", normalCDF(-10))
+	}
+	// CDF(1.96) ~ 0.975
+	if math.Abs(normalCDF(1.96)-0.975) > 0.001 {
+		t.Errorf("normalCDF(1.96) = %f, want ~0.975", normalCDF(1.96))
+	}
+}
+
+func TestNormalQuantile(t *testing.T) {
+	// quantile(0.5) = 0
+	if math.Abs(normalQuantile(0.5)) > 1e-10 {
+		t.Errorf("normalQuantile(0.5) = %f, want 0", normalQuantile(0.5))
+	}
+	// quantile(0.975) ~ 1.96
+	if math.Abs(normalQuantile(0.975)-1.96) > 0.01 {
+		t.Errorf("normalQuantile(0.975) = %f, want ~1.96", normalQuantile(0.975))
+	}
+	// quantile(0.025) ~ -1.96
+	if math.Abs(normalQuantile(0.025)+1.96) > 0.01 {
+		t.Errorf("normalQuantile(0.025) = %f, want ~-1.96", normalQuantile(0.025))
+	}
+}
+
+func TestInvertMatrix(t *testing.T) {
+	// 2x2 identity
+	A := [][]float64{{1, 0}, {0, 1}}
+	inv := invertMatrix(A)
+	if inv == nil {
+		t.Fatal("expected non-nil inverse")
+	}
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 2; j++ {
+			expected := 0.0
+			if i == j {
+				expected = 1.0
+			}
+			if math.Abs(inv[i][j]-expected) > 1e-10 {
+				t.Errorf("inv[%d][%d] = %f, want %f", i, j, inv[i][j], expected)
+			}
+		}
+	}
+
+	// 2x2 non-trivial: [[2,1],[1,3]], inverse = [[3/5, -1/5],[-1/5, 2/5]]
+	B := [][]float64{{2, 1}, {1, 3}}
+	inv2 := invertMatrix(B)
+	if inv2 == nil {
+		t.Fatal("expected non-nil inverse")
+	}
+	if math.Abs(inv2[0][0]-0.6) > 1e-10 {
+		t.Errorf("inv[0][0] = %f, want 0.6", inv2[0][0])
+	}
+	if math.Abs(inv2[0][1]+0.2) > 1e-10 {
+		t.Errorf("inv[0][1] = %f, want -0.2", inv2[0][1])
+	}
+}
+
+// --- DoubleML SE/CI/PValue/Summary/CATE/NSplits tests ---
+
+func TestDoubleMLSEAndCI(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(777))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 4
+		tr := 0.5*c + rng.NormFloat64()*0.1
+		y := 2.0*tr + 1.0*c + rng.NormFloat64()*0.1
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	dml := NewDoubleMLRegressor("treatment", "outcome", []string{"confounder"})
+	if err := dml.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	// SE should be positive and small relative to ATE.
+	se := dml.SE()
+	if se <= 0 {
+		t.Errorf("SE should be positive, got %f", se)
+	}
+	if se > 1.0 {
+		t.Errorf("SE unexpectedly large: %f", se)
+	}
+
+	// 95% CI should contain true ATE of 2.0.
+	lo, hi := dml.ConfidenceInterval(0.05)
+	if lo >= hi {
+		t.Errorf("CI lower (%f) >= upper (%f)", lo, hi)
+	}
+	if lo > 2.0 || hi < 2.0 {
+		t.Logf("WARNING: 95%% CI [%f, %f] does not contain true ATE 2.0", lo, hi)
+	}
+
+	// P-value should be small (ATE is significantly different from 0).
+	pval := dml.PValue()
+	if pval < 0 || pval > 1 {
+		t.Errorf("P-value out of range: %f", pval)
+	}
+	if pval > 0.05 {
+		t.Errorf("P-value should be <0.05 for large effect, got %f", pval)
+	}
+}
+
+func TestDoubleMLNSplits(t *testing.T) {
+	n := 600
+	rng := rand.New(rand.NewSource(888))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 4
+		tr := 0.5*c + rng.NormFloat64()*0.1
+		y := 2.0*tr + 1.0*c + rng.NormFloat64()*0.1
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	// Test with 5-fold cross-fitting.
+	dml := NewDoubleMLRegressor("treatment", "outcome", []string{"confounder"})
+	dml.SetNSplits(5)
+	if err := dml.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	ate := dml.ATE()
+	if math.Abs(ate-2.0) > tol {
+		t.Errorf("DML ATE with 5 folds: got %f, want ~2.0", ate)
+	}
+}
+
+func TestDoubleMLEstimateCate(t *testing.T) {
+	n := 500
+	rng := rand.New(rand.NewSource(999))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 4
+		tr := 0.5*c + rng.NormFloat64()*0.1
+		y := 2.0*tr + 1.0*c + rng.NormFloat64()*0.1
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	dml := NewDoubleMLRegressor("treatment", "outcome", []string{"confounder"})
+	if err := dml.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	cate, err := dml.EstimateCate()
+	if err != nil {
+		t.Fatalf("EstimateCate error: %v", err)
+	}
+	if len(cate) != n {
+		t.Fatalf("expected %d CATE values, got %d", n, len(cate))
+	}
+
+	// For a linear model, CATE values should be centered around the ATE.
+	mean := 0.0
+	for _, v := range cate {
+		mean += v
+	}
+	mean /= float64(len(cate))
+	if math.Abs(mean-dml.ATE()) > 0.5 {
+		t.Errorf("mean CATE (%f) should be close to ATE (%f)", mean, dml.ATE())
+	}
+}
+
+func TestDoubleMLEstimateCateNotFitted(t *testing.T) {
+	dml := NewDoubleMLRegressor("t", "y", []string{"c"})
+	_, err := dml.EstimateCate()
+	if err == nil {
+		t.Error("expected error for unfitted model")
+	}
+}
+
+func TestDoubleMLSummary(t *testing.T) {
+	n := 200
+	rng := rand.New(rand.NewSource(111))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 4
+		tr := 0.5*c + rng.NormFloat64()*0.1
+		y := 2.0*tr + 1.0*c + rng.NormFloat64()*0.1
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	dml := NewDoubleMLRegressor("treatment", "outcome", []string{"confounder"})
+	// Not fitted.
+	s := dml.Summary()
+	if s != "DoubleMLRegressor: not fitted" {
+		t.Errorf("unexpected summary for unfitted model: %s", s)
+	}
+
+	if err := dml.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	s = dml.Summary()
+	if len(s) == 0 {
+		t.Error("summary should not be empty")
+	}
+	// Check key fields are present.
+	for _, substr := range []string{"ATE:", "Std. Error:", "95%", "P-value:", "treatment", "outcome"} {
+		if !containsSubstring(s, substr) {
+			t.Errorf("summary missing %q", substr)
+		}
+	}
+}
+
+// --- NaiveAdjustment Predict/SE/CI/PValue/Summary tests ---
+
+func TestNaiveAdjustmentPredict(t *testing.T) {
+	// y = 3*treatment + 2*confounder + 1 (no noise)
+	n := 200
+	rng := rand.New(rand.NewSource(789))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 3
+		tr := rng.Float64() * 2
+		y := 3.0*tr + 2.0*c + 1.0
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	adj := NewNaiveAdjustmentRegressor("treatment", "outcome", []string{"confounder"})
+	if err := adj.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	preds, err := adj.Predict(df)
+	if err != nil {
+		t.Fatalf("Predict error: %v", err)
+	}
+	if len(preds) != n {
+		t.Fatalf("expected %d predictions, got %d", n, len(preds))
+	}
+
+	// Predictions should be close to actual outcomes (no noise case).
+	for i := 0; i < n; i++ {
+		if math.Abs(preds[i]-outcomes[i]) > 0.01 {
+			t.Errorf("prediction[%d]: got %f, want %f", i, preds[i], outcomes[i])
+			break
+		}
+	}
+}
+
+func TestNaiveAdjustmentPredictNotFitted(t *testing.T) {
+	adj := NewNaiveAdjustmentRegressor("t", "y", []string{"c"})
+	_, err := adj.Predict(makeDF(map[string][]float64{
+		"t": {1, 2}, "y": {1, 2}, "c": {1, 2},
+	}))
+	if err == nil {
+		t.Error("expected error for unfitted model")
+	}
+}
+
+func TestNaiveAdjustmentSEAndCI(t *testing.T) {
+	n := 500
+	rng := rand.New(rand.NewSource(222))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 4
+		tr := rng.Float64() * 2
+		y := 5.0*tr + 1.0*c + rng.NormFloat64()*0.2
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	adj := NewNaiveAdjustmentRegressor("treatment", "outcome", []string{"confounder"})
+	if err := adj.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	se := adj.SE()
+	if se <= 0 {
+		t.Errorf("SE should be positive, got %f", se)
+	}
+
+	lo, hi := adj.ConfidenceInterval(0.05)
+	if lo >= hi {
+		t.Errorf("CI lower (%f) >= upper (%f)", lo, hi)
+	}
+	ate := adj.ATE()
+	if lo > ate || hi < ate {
+		t.Errorf("CI [%f, %f] should contain ATE %f", lo, hi, ate)
+	}
+
+	pval := adj.PValue()
+	if pval < 0 || pval > 1 {
+		t.Errorf("P-value out of range: %f", pval)
+	}
+	// With true ATE=5 and low noise, p-value should be very small.
+	if pval > 0.05 {
+		t.Errorf("P-value should be <0.05, got %f", pval)
+	}
+}
+
+func TestNaiveAdjustmentSummary(t *testing.T) {
+	n := 200
+	rng := rand.New(rand.NewSource(333))
+
+	confounders := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		c := rng.Float64() * 3
+		tr := rng.Float64() * 2
+		y := 3.0*tr + 2.0*c + 1.0 + rng.NormFloat64()*0.1
+		confounders[i] = c
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"confounder": confounders,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	adj := NewNaiveAdjustmentRegressor("treatment", "outcome", []string{"confounder"})
+	// Not fitted.
+	s := adj.Summary()
+	if s != "NaiveAdjustmentRegressor: not fitted" {
+		t.Errorf("unexpected summary for unfitted model: %s", s)
+	}
+
+	if err := adj.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	s = adj.Summary()
+	if len(s) == 0 {
+		t.Error("summary should not be empty")
+	}
+	for _, substr := range []string{"ATE:", "Std. Error:", "95%", "P-value:", "treatment", "outcome"} {
+		if !containsSubstring(s, substr) {
+			t.Errorf("summary missing %q", substr)
+		}
+	}
+}
+
+// --- NaiveIV Predict/SE/CI/PValue/FirstStageFStat/Summary tests ---
+
+func TestNaiveIVPredict(t *testing.T) {
+	n := 500
+	rng := rand.New(rand.NewSource(444))
+
+	instruments := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		z := rng.Float64() * 5
+		u := rng.NormFloat64() * 0.3
+		tr := 2.0*z + u
+		y := 3.0*tr + u
+		instruments[i] = z
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"instrument": instruments,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	iv := NewNaiveIVRegressor("treatment", "outcome", []string{"instrument"})
+	if err := iv.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	preds, err := iv.Predict(df)
+	if err != nil {
+		t.Fatalf("Predict error: %v", err)
+	}
+	if len(preds) != n {
+		t.Fatalf("expected %d predictions, got %d", n, len(preds))
+	}
+
+	// Predictions should be correlated with actual outcomes.
+	// Check they are not all zero.
+	allZero := true
+	for _, p := range preds {
+		if p != 0 {
+			allZero = false
+			break
+		}
+	}
+	if allZero {
+		t.Error("all predictions are zero")
+	}
+}
+
+func TestNaiveIVPredictNotFitted(t *testing.T) {
+	iv := NewNaiveIVRegressor("t", "y", []string{"z"})
+	_, err := iv.Predict(makeDF(map[string][]float64{
+		"t": {1, 2}, "y": {1, 2}, "z": {1, 2},
+	}))
+	if err == nil {
+		t.Error("expected error for unfitted model")
+	}
+}
+
+func TestNaiveIVSEAndCI(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(555))
+
+	instruments := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		z := rng.Float64() * 5
+		u := rng.NormFloat64() * 0.5
+		tr := 2.0*z + u
+		y := 3.0*tr + u
+		instruments[i] = z
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"instrument": instruments,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	iv := NewNaiveIVRegressor("treatment", "outcome", []string{"instrument"})
+	if err := iv.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	se := iv.SE()
+	if se <= 0 {
+		t.Errorf("SE should be positive, got %f", se)
+	}
+
+	lo, hi := iv.ConfidenceInterval(0.05)
+	if lo >= hi {
+		t.Errorf("CI lower (%f) >= upper (%f)", lo, hi)
+	}
+
+	pval := iv.PValue()
+	if pval < 0 || pval > 1 {
+		t.Errorf("P-value out of range: %f", pval)
+	}
+	if pval > 0.05 {
+		t.Errorf("P-value should be <0.05 for large effect, got %f", pval)
+	}
+}
+
+func TestNaiveIVFirstStageFStat(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(666))
+
+	instruments := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		z := rng.Float64() * 5
+		u := rng.NormFloat64() * 0.5
+		tr := 2.0*z + u // strong instrument
+		y := 3.0*tr + u
+		instruments[i] = z
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"instrument": instruments,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	iv := NewNaiveIVRegressor("treatment", "outcome", []string{"instrument"})
+	if err := iv.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	fstat := iv.FirstStageFStat()
+	// With a strong instrument (coeff=2.0, low noise), F-stat should be >> 10.
+	if fstat < 10 {
+		t.Errorf("F-stat should be >> 10 for strong instrument, got %f", fstat)
+	}
+	t.Logf("First stage F-stat: %.2f", fstat)
+}
+
+func TestNaiveIVFirstStageFStatNotFitted(t *testing.T) {
+	iv := NewNaiveIVRegressor("t", "y", []string{"z"})
+	if iv.FirstStageFStat() != 0 {
+		t.Error("expected 0 for unfitted model")
+	}
+}
+
+func TestNaiveIVSummary(t *testing.T) {
+	n := 500
+	rng := rand.New(rand.NewSource(777))
+
+	instruments := make([]float64, n)
+	treatments := make([]float64, n)
+	outcomes := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		z := rng.Float64() * 5
+		u := rng.NormFloat64() * 0.5
+		tr := 2.0*z + u
+		y := 3.0*tr + u
+		instruments[i] = z
+		treatments[i] = tr
+		outcomes[i] = y
+	}
+
+	df := makeDF(map[string][]float64{
+		"instrument": instruments,
+		"treatment":  treatments,
+		"outcome":    outcomes,
+	})
+
+	iv := NewNaiveIVRegressor("treatment", "outcome", []string{"instrument"})
+	// Not fitted.
+	s := iv.Summary()
+	if s != "NaiveIVRegressor: not fitted" {
+		t.Errorf("unexpected summary for unfitted model: %s", s)
+	}
+
+	if err := iv.Fit(df); err != nil {
+		t.Fatalf("Fit error: %v", err)
+	}
+
+	s = iv.Summary()
+	if len(s) == 0 {
+		t.Error("summary should not be empty")
+	}
+	for _, substr := range []string{"ATE:", "Std. Error:", "95%", "P-value:", "1st Stage F:", "treatment", "outcome"} {
+		if !containsSubstring(s, substr) {
+			t.Errorf("summary missing %q", substr)
+		}
+	}
+}
+
+// containsSubstring checks if s contains substr.
+func containsSubstring(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

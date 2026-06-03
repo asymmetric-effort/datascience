@@ -64,6 +64,27 @@ func (em *ExpectationMaximization) Converged() bool {
 	return em.converged
 }
 
+// GetParameters returns the estimated CPDs for all nodes in the network as a
+// map from node name to TabularCPD. This matches pgmpy's
+// ExpectationMaximization.get_parameters(). The CPDs must have been estimated
+// via Estimate() before calling this method.
+func (em *ExpectationMaximization) GetParameters() (map[string]*factors.TabularCPD, error) {
+	if em.bn == nil {
+		return nil, fmt.Errorf("learning: BayesianNetwork is nil")
+	}
+
+	nodes := em.bn.Nodes()
+	result := make(map[string]*factors.TabularCPD, len(nodes))
+	for _, node := range nodes {
+		cpd := em.bn.GetCPD(node)
+		if cpd == nil {
+			return nil, fmt.Errorf("learning: no CPD found for node %q; call Estimate first", node)
+		}
+		result[node] = cpd
+	}
+	return result, nil
+}
+
 // Estimate runs the EM algorithm and updates the Bayesian network's CPDs.
 func (em *ExpectationMaximization) Estimate() error {
 	nodes := em.bn.Nodes()

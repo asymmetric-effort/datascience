@@ -165,6 +165,88 @@ func (h *HillClimbSearch) Estimate() (*models.BayesianNetwork, error) {
 	return bn, nil
 }
 
+// Operation represents a legal graph modification with its score delta.
+// It is the public-facing version of the internal operation type.
+type Operation struct {
+	// Type is "add", "delete", or "reverse".
+	Type string
+	// From is the source node of the edge.
+	From string
+	// To is the destination node of the edge.
+	To string
+	// Delta is the score improvement from applying this operation.
+	Delta float64
+}
+
+// LegalOperations returns all legal operations (add, delete, reverse) that can
+// be applied to the current graph state along with their score deltas. This
+// matches pgmpy's HillClimbSearch._legal_operations() method.
+//
+// The dag parameter is the current directed graph, and columns lists all
+// variable names. Only operations with positive score deltas are returned.
+func (h *HillClimbSearch) LegalOperations(dag *graphgo.DiGraph, columns []string) []Operation {
+	var result []Operation
+
+	nodes := make([]string, len(columns))
+	copy(nodes, columns)
+	sort.Strings(nodes)
+
+	for _, u := range nodes {
+		for _, v := range nodes {
+			if u == v {
+				continue
+			}
+
+			// Add edge u->v.
+			if !dag.HasEdge(u, v) && !dag.HasEdge(v, u) {
+				if !h.blackList[[2]string{u, v}] && h.indegreeOK(dag, v) {
+					delta := h.scoreDeltaAdd(dag, u, v)
+					if delta > 0 {
+						result = append(result, Operation{
+							Type:  "add",
+							From:  u,
+							To:    v,
+							Delta: delta,
+						})
+					}
+				}
+			}
+
+			// Delete edge u->v.
+			if dag.HasEdge(u, v) {
+				if !h.whiteList[[2]string{u, v}] {
+					delta := h.scoreDeltaDelete(dag, u, v)
+					if delta > 0 {
+						result = append(result, Operation{
+							Type:  "delete",
+							From:  u,
+							To:    v,
+							Delta: delta,
+						})
+					}
+				}
+			}
+
+			// Reverse edge u->v.
+			if dag.HasEdge(u, v) {
+				if !h.blackList[[2]string{v, u}] && !h.whiteList[[2]string{u, v}] && h.indegreeOK(dag, u) {
+					delta := h.scoreDeltaReverse(dag, u, v)
+					if delta > 0 {
+						result = append(result, Operation{
+							Type:  "reverse",
+							From:  u,
+							To:    v,
+							Delta: delta,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 // totalScore computes the sum of local scores for all variables.
 func (h *HillClimbSearch) totalScore(g *graphgo.DiGraph, columns []string) float64 {
 	total := 0.0

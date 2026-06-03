@@ -35,7 +35,39 @@ func (m *mockBackend) FactorProduct(aV []float64, aS []int, bV []float64, bS []i
 func (m *mockBackend) Marginalize(v []float64, s []int, axis int) ([]float64, []int) {
 	return nil, nil
 }
-func (m *mockBackend) Close() error { m.closed = true; return nil }
+func (m *mockBackend) Close() error                               { m.closed = true; return nil }
+func (m *mockBackend) ElementWiseAdd(a, b []float64) []float64    { return nil }
+func (m *mockBackend) ElementWiseSub(a, b []float64) []float64    { return nil }
+func (m *mockBackend) ElementWiseDiv(a, b []float64) []float64    { return nil }
+func (m *mockBackend) ScalarMul(a []float64, s float64) []float64 { return nil }
+func (m *mockBackend) ScalarAdd(a []float64, s float64) []float64 { return nil }
+func (m *mockBackend) Exp(a []float64) []float64                  { return nil }
+func (m *mockBackend) Log(a []float64) []float64                  { return nil }
+func (m *mockBackend) Sqrt(a []float64) []float64                 { return nil }
+func (m *mockBackend) Abs(a []float64) []float64                  { return nil }
+func (m *mockBackend) Max(a []float64) float64                    { return 0 }
+func (m *mockBackend) Min(a []float64) float64                    { return 0 }
+func (m *mockBackend) ArgMax(a []float64) int                     { return 0 }
+func (m *mockBackend) ArgMin(a []float64) int                     { return 0 }
+func (m *mockBackend) Dot(a, b []float64) float64                 { return 0 }
+func (m *mockBackend) FactorReduce(v []float64, s []int, axis, index int) ([]float64, []int) {
+	return nil, nil
+}
+func (m *mockBackend) FactorMaximize(v []float64, s []int, axis int) ([]float64, []int) {
+	return nil, nil
+}
+func (m *mockBackend) LogSumExp(a []float64) float64                          { return 0 }
+func (m *mockBackend) Softmax(a []float64) []float64                          { return nil }
+func (m *mockBackend) BatchMatMul(a, b []float64, bs, mm, k, n int) []float64 { return nil }
+func (m *mockBackend) BatchNormalize(a []float64, bs, n int) []float64        { return nil }
+func (m *mockBackend) Alloc(size int) []float64                               { return make([]float64, size) }
+func (m *mockBackend) Free(data []float64)                                    {}
+func (m *mockBackend) CopyToDevice(data []float64) []float64                  { return data }
+func (m *mockBackend) CopyFromDevice(data []float64) []float64                { return data }
+func (m *mockBackend) DeviceCount() int                                       { return 1 }
+func (m *mockBackend) DeviceName(index int) string                            { return m.name }
+func (m *mockBackend) MemoryUsed() int64                                      { return 0 }
+func (m *mockBackend) MemoryTotal() int64                                     { return 0 }
 
 func TestSetBackend(t *testing.T) {
 	ResetBackend()
