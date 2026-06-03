@@ -780,7 +780,7 @@ func TestWriteXBN_NoCPD(t *testing.T) {
 }
 
 // Exercise XBN with multi-parent conditional to cover dist parsing.
-func TestXBN_RoundTrip_MultiParent(t *testing.T) {
+func TestXBN_Coverage_MultiParent(t *testing.T) {
 	bn := buildMultiParentBN(t)
 
 	var buf bytes.Buffer
@@ -793,11 +793,7 @@ func TestXBN_RoundTrip_MultiParent(t *testing.T) {
 		t.Fatalf("ReadXBN failed: %v\nOutput:\n%s", err, buf.String())
 	}
 
-	nodes1 := bn.Nodes()
-	nodes2 := bn2.Nodes()
-	if len(nodes1) != len(nodes2) {
-		t.Fatalf("XBN multi-parent round-trip: node count mismatch: %d vs %d", len(nodes1), len(nodes2))
-	}
+	assertBNEqual(t, bn2, bn, "XBN multi-parent coverage round-trip")
 }
 
 // Exercise XBN ReadXBN with default binary states.
@@ -875,16 +871,17 @@ func TestReadPomdpX_DefaultStateNames(t *testing.T) {
 }
 
 // Exercise PomdpX round-trip with multi-parent to cover conditional paths.
-func TestPomdpX_WriteRead_MultiParent(t *testing.T) {
+func TestPomdpX_Coverage_MultiParent(t *testing.T) {
 	bn := buildMultiParentBN(t)
 	var buf bytes.Buffer
 	if err := WritePomdpX(&buf, bn); err != nil {
 		t.Fatalf("WritePomdpX failed: %v", err)
 	}
-	_, err := ReadPomdpX(strings.NewReader(buf.String()))
+	bn2, err := ReadPomdpX(strings.NewReader(buf.String()))
 	if err != nil {
 		t.Fatalf("ReadPomdpX failed: %v\nOutput:\n%s", err, buf.String())
 	}
+	assertBNEqual(t, bn2, bn, "PomdpX multi-parent coverage round-trip")
 }
 
 // ---------------------------------------------------------------------------
@@ -1084,6 +1081,24 @@ func TestAllFormats_RoundTrip_MultiParent(t *testing.T) {
 			},
 			read: func(s string) (*models.BayesianNetwork, error) {
 				return ReadXDSL(strings.NewReader(s))
+			},
+		},
+		{
+			name: "PomdpX",
+			write: func(buf *bytes.Buffer, bn *models.BayesianNetwork) error {
+				return WritePomdpX(buf, bn)
+			},
+			read: func(s string) (*models.BayesianNetwork, error) {
+				return ReadPomdpX(strings.NewReader(s))
+			},
+		},
+		{
+			name: "XBN",
+			write: func(buf *bytes.Buffer, bn *models.BayesianNetwork) error {
+				return WriteXBN(buf, bn)
+			},
+			read: func(s string) (*models.BayesianNetwork, error) {
+				return ReadXBN(strings.NewReader(s))
 			},
 		},
 	}

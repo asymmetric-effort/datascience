@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/asymmetric-effort/pgmgo/src/factors"
@@ -55,7 +56,7 @@ type xbnDynaProp struct {
 }
 
 type xbnFormat struct {
-	// Placeholder; not used in basic parsing.
+	// Placeholder; not used in parsing.
 }
 
 type xbnDist struct {
@@ -80,7 +81,10 @@ type xbnPrivDist struct {
 }
 
 // ReadXBN parses a Microsoft XBN format file and returns a BayesianNetwork.
-// This is a basic/stub implementation.
+// Supports full NODELIST with STATENAME elements, ARCLIST with parent/child
+// arcs, and DISTRIBS with DIST elements containing CONDSET/CONDELEM for parent
+// references and DPIS/DPI with INDEXES attributes for conditional probability
+// distributions.
 func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -158,37 +162,114 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 			numParentConfigs *= ec
 		}
 
-		// Collect all DPI values.
-		var allVals []float64
-		for _, dpi := range dist.DPIs {
-			vals, err := xmlbifParseFloats(dpi.Values)
-			if err != nil {
-				return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
-			}
-			allVals = append(allVals, vals...)
-		}
-
-		expectedLen := childInfo.card * numParentConfigs
-		if len(allVals) != expectedLen {
-			// Try to use uniform if data mismatch.
-			allVals = make([]float64, expectedLen)
-			prob := 1.0 / float64(childInfo.card)
-			for j := range allVals {
-				allVals[j] = prob
-			}
-		}
-
-		// XBN ordering: each DPI row is one parent config, child states listed.
+		// Initialize values array: values[childState][parentConfig].
 		values := make([][]float64, childInfo.card)
 		for cs := 0; cs < childInfo.card; cs++ {
 			values[cs] = make([]float64, numParentConfigs)
 		}
 
-		idx := 0
-		for pc := 0; pc < numParentConfigs; pc++ {
-			for cs := 0; cs < childInfo.card; cs++ {
-				values[cs][pc] = allVals[idx]
-				idx++
+		if len(parents) == 0 {
+			// Unconditional: single DPI row with all child state probs.
+			var allVals []float64
+			for _, dpi := range dist.DPIs {
+				vals, err := xmlbifParseFloats(dpi.Values)
+				if err != nil {
+					return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
+				}
+				allVals = append(allVals, vals...)
+			}
+
+			if len(allVals) != childInfo.card {
+				// Fallback to uniform.
+				prob := 1.0 / float64(childInfo.card)
+				for cs := 0; cs < childInfo.card; cs++ {
+					values[cs][0] = prob
+				}
+			} else {
+				for cs := 0; cs < childInfo.card; cs++ {
+					values[cs][0] = allVals[cs]
+				}
+			}
+		} else {
+			// Conditional: DPI rows with INDEXES attribute specifying parent config.
+			// Check if INDEXES attributes are present.
+			hasIndexes := false
+			for _, dpi := range dist.DPIs {
+				if strings.TrimSpace(dpi.Indexes) != "" {
+					hasIndexes = true
+					break
+				}
+			}
+
+			if hasIndexes {
+				// Parse DPIs using INDEXES to determine parent config.
+				for _, dpi := range dist.DPIs {
+					vals, err := xmlbifParseFloats(dpi.Values)
+					if err != nil {
+						return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
+					}
+					if len(vals) != childInfo.card {
+						continue
+					}
+
+					// Parse INDEXES: space-separated integers representing parent
+					// state indices. Compute parent config from these.
+					idxFields := strings.Fields(strings.TrimSpace(dpi.Indexes))
+					if len(idxFields) != len(parents) {
+						continue
+					}
+
+					pc := 0
+					stride := 1
+					valid := true
+					for pi := len(parents) - 1; pi >= 0; pi-- {
+						idx, err := strconv.Atoi(idxFields[pi])
+						if err != nil {
+							valid = false
+							break
+						}
+						pc += idx * stride
+						stride *= evidenceCard[pi]
+					}
+					if !valid {
+						continue
+					}
+
+					if pc < numParentConfigs {
+						for cs := 0; cs < childInfo.card; cs++ {
+							values[cs][pc] = vals[cs]
+						}
+					}
+				}
+			} else {
+				// No INDEXES: DPI rows are in order of parent configs.
+				var allVals []float64
+				for _, dpi := range dist.DPIs {
+					vals, err := xmlbifParseFloats(dpi.Values)
+					if err != nil {
+						return nil, fmt.Errorf("readwrite: error parsing XBN dist for %q: %w", child, err)
+					}
+					allVals = append(allVals, vals...)
+				}
+
+				expectedLen := childInfo.card * numParentConfigs
+				if len(allVals) != expectedLen {
+					// Fallback to uniform.
+					prob := 1.0 / float64(childInfo.card)
+					for cs := 0; cs < childInfo.card; cs++ {
+						for pc := 0; pc < numParentConfigs; pc++ {
+							values[cs][pc] = prob
+						}
+					}
+				} else {
+					idx := 0
+					for pc := 0; pc < numParentConfigs; pc++ {
+						for cs := 0; cs < childInfo.card; cs++ {
+							values[cs][pc] = allVals[idx]
+							idx++
+						}
+					}
+				}
 			}
 		}
 
@@ -224,7 +305,9 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 	return bn, nil
 }
 
-// WriteXBN serializes a BayesianNetwork to Microsoft XBN format (basic stub).
+// WriteXBN serializes a BayesianNetwork to Microsoft XBN format with full
+// NODELIST (including STATENAME elements), ARCLIST, and DISTRIBS with
+// CONDSET/CONDELEM and DPI elements with INDEXES attributes.
 func WriteXBN(w io.Writer, bn *models.BayesianNetwork) error {
 	nodes := bn.Nodes()
 
@@ -279,7 +362,21 @@ func WriteXBN(w io.Writer, bn *models.BayesianNetwork) error {
 			for cs := 0; cs < childCard; cs++ {
 				parts = append(parts, formatFloat(data[cs*numParentConfigs+pc]))
 			}
-			dpis = append(dpis, xbnDPI{Values: strings.Join(parts, " ")})
+
+			dpi := xbnDPI{Values: strings.Join(parts, " ")}
+
+			// Add INDEXES for conditional distributions.
+			if len(evidence) > 0 {
+				indexParts := make([]string, len(evidence))
+				remainder := pc
+				for pi := len(evidence) - 1; pi >= 0; pi-- {
+					indexParts[pi] = strconv.Itoa(remainder % evidenceCard[pi])
+					remainder /= evidenceCard[pi]
+				}
+				dpi.Indexes = strings.Join(indexParts, " ")
+			}
+
+			dpis = append(dpis, dpi)
 		}
 
 		dists = append(dists, xbnDist{

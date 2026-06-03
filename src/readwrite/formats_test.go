@@ -483,11 +483,10 @@ func TestReadXDSL_Basic(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// PomdpX (stub)
+// PomdpX
 // ---------------------------------------------------------------------------
 
 func TestPomdpX_RoundTrip_Unconditional(t *testing.T) {
-	// Build a simple unconditional-only network for the stub.
 	bn := models.NewBayesianNetwork()
 	must(t, bn.AddNode("X"))
 	must(t, bn.SetStates("X", []string{"x0", "x1"}))
@@ -506,17 +505,10 @@ func TestPomdpX_RoundTrip_Unconditional(t *testing.T) {
 		t.Fatalf("ReadPomdpX failed: %v\nOutput:\n%s", err, buf.String())
 	}
 
-	nodes := bn2.Nodes()
-	if len(nodes) != 1 || nodes[0] != "X" {
-		t.Fatalf("expected [X], got %v", nodes)
-	}
-
-	cpd := bn2.GetCPD("X")
-	data := cpd.ToFactor().Values().Data()
-	assertFloatsClose(t, data, []float64{0.3, 0.7}, "PomdpX round-trip X CPD")
+	assertBNEqual(t, bn2, bn, "PomdpX unconditional round-trip")
 }
 
-func TestPomdpX_WriteRead(t *testing.T) {
+func TestPomdpX_RoundTrip(t *testing.T) {
 	bn := buildThreeNodeBN(t)
 
 	var buf bytes.Buffer
@@ -524,16 +516,32 @@ func TestPomdpX_WriteRead(t *testing.T) {
 		t.Fatalf("WritePomdpX failed: %v", err)
 	}
 
-	// Just verify it can be read without error. The stub may not preserve
-	// conditional distributions perfectly.
-	_, err := ReadPomdpX(strings.NewReader(buf.String()))
+	bn2, err := ReadPomdpX(strings.NewReader(buf.String()))
 	if err != nil {
 		t.Fatalf("ReadPomdpX failed: %v\nOutput:\n%s", err, buf.String())
 	}
+
+	assertBNEqual(t, bn2, bn, "PomdpX round-trip")
+}
+
+func TestPomdpX_RoundTrip_MultiParent(t *testing.T) {
+	bn := buildMultiParentBN(t)
+
+	var buf bytes.Buffer
+	if err := WritePomdpX(&buf, bn); err != nil {
+		t.Fatalf("WritePomdpX failed: %v", err)
+	}
+
+	bn2, err := ReadPomdpX(strings.NewReader(buf.String()))
+	if err != nil {
+		t.Fatalf("ReadPomdpX failed: %v\nOutput:\n%s", err, buf.String())
+	}
+
+	assertBNEqual(t, bn2, bn, "PomdpX multi-parent round-trip")
 }
 
 // ---------------------------------------------------------------------------
-// XBN (stub)
+// XBN
 // ---------------------------------------------------------------------------
 
 func TestXBN_RoundTrip(t *testing.T) {
@@ -549,24 +557,7 @@ func TestXBN_RoundTrip(t *testing.T) {
 		t.Fatalf("ReadXBN failed: %v\nOutput:\n%s", err, buf.String())
 	}
 
-	// Verify structure.
-	nodes1 := bn.Nodes()
-	nodes2 := bn2.Nodes()
-	if len(nodes1) != len(nodes2) {
-		t.Fatalf("XBN round-trip: node count mismatch: %d vs %d", len(nodes1), len(nodes2))
-	}
-
-	for i := range nodes1 {
-		if nodes1[i] != nodes2[i] {
-			t.Errorf("XBN round-trip: node %d: want %q, got %q", i, nodes1[i], nodes2[i])
-		}
-	}
-
-	edges1 := bn.Edges()
-	edges2 := bn2.Edges()
-	if len(edges1) != len(edges2) {
-		t.Fatalf("XBN round-trip: edge count mismatch: %d vs %d", len(edges1), len(edges2))
-	}
+	assertBNEqual(t, bn2, bn, "XBN round-trip")
 }
 
 func TestXBN_RoundTrip_Unconditional(t *testing.T) {
@@ -588,12 +579,23 @@ func TestXBN_RoundTrip_Unconditional(t *testing.T) {
 		t.Fatalf("ReadXBN failed: %v\nOutput:\n%s", err, buf.String())
 	}
 
-	cpd := bn2.GetCPD("X")
-	if cpd == nil {
-		t.Fatal("X CPD is nil after round-trip")
+	assertBNEqual(t, bn2, bn, "XBN unconditional round-trip")
+}
+
+func TestXBN_RoundTrip_MultiParent(t *testing.T) {
+	bn := buildMultiParentBN(t)
+
+	var buf bytes.Buffer
+	if err := WriteXBN(&buf, bn); err != nil {
+		t.Fatalf("WriteXBN failed: %v", err)
 	}
-	data := cpd.ToFactor().Values().Data()
-	assertFloatsClose(t, data, []float64{0.3, 0.7}, "XBN round-trip X CPD")
+
+	bn2, err := ReadXBN(strings.NewReader(buf.String()))
+	if err != nil {
+		t.Fatalf("ReadXBN failed: %v\nOutput:\n%s", err, buf.String())
+	}
+
+	assertBNEqual(t, bn2, bn, "XBN multi-parent round-trip")
 }
 
 // ---------------------------------------------------------------------------

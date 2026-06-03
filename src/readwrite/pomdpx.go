@@ -10,7 +10,7 @@ import (
 	"github.com/asymmetric-effort/pgmgo/src/models"
 )
 
-// PomdpX XML structures (basic/stub support).
+// PomdpX XML structures with full CondProb/Entry support for BN use.
 type pomdpxDoc struct {
 	XMLName         xml.Name          `xml:"pomdpx"`
 	Version         string            `xml:"version,attr"`
@@ -64,9 +64,10 @@ type pomdpxEntry struct {
 	ProbTable string `xml:"ProbTable"`
 }
 
-// ReadPomdpX parses a PomdpX format file with basic support and returns a BayesianNetwork.
-// This is a stub implementation that handles simple state variable definitions with
-// initial belief distributions.
+// ReadPomdpX parses a PomdpX format file and returns a BayesianNetwork.
+// Supports full Variable definitions with ValueEnum, InitialStateBelief for
+// unconditional CPDs, and StateTransitionFunction for conditional CPDs with
+// parent references via Entry instance/probability pairs.
 func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -124,25 +125,57 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 		varMap[name] = &varInfo{card: len(states), states: states}
 	}
 
-	// Parse initial belief as unconditional CPDs.
-	if doc.InitBelief != nil {
-		for _, cp := range doc.InitBelief.CondProbs {
-			if len(cp.Var) == 0 {
-				continue
-			}
-			child := strings.TrimSpace(cp.Var[0].Name)
-			childInfo := varMap[child]
-			if childInfo == nil {
-				continue
-			}
+	// parseCondProb processes a CondProb element, adds edges and creates a CPD.
+	parseCondProb := func(cp pomdpxCondProb) error {
+		if len(cp.Var) == 0 {
+			return nil
+		}
+		child := strings.TrimSpace(cp.Var[0].Name)
+		childInfo := varMap[child]
+		if childInfo == nil {
+			return nil
+		}
 
-			// Get probability values from entries.
+		// Determine parents from the Parent element.
+		var parents []string
+		var evidenceCard []int
+		for _, p := range cp.Parents {
+			for _, pName := range strings.Fields(p.Names) {
+				pName = strings.TrimSpace(pName)
+				if pName == "" || pName == child {
+					continue
+				}
+				pi := varMap[pName]
+				if pi == nil {
+					return fmt.Errorf("readwrite: PomdpX CondProb references unknown parent %q", pName)
+				}
+				parents = append(parents, pName)
+				evidenceCard = append(evidenceCard, pi.card)
+			}
+		}
+
+		// Add edges.
+		for _, p := range parents {
+			if err := bn.AddEdge(p, child); err != nil {
+				if !strings.Contains(err.Error(), "already exists") {
+					return fmt.Errorf("readwrite: %w", err)
+				}
+			}
+		}
+
+		numParentConfigs := 1
+		for _, ec := range evidenceCard {
+			numParentConfigs *= ec
+		}
+
+		if len(parents) == 0 {
+			// Unconditional: collect all probability values from entries.
 			var allVals []float64
 			for _, param := range cp.Params {
 				for _, entry := range param.Entries {
 					vals, err := xmlbifParseFloats(entry.ProbTable)
 					if err != nil {
-						return nil, fmt.Errorf("readwrite: error parsing PomdpX probs for %q: %w", child, err)
+						return fmt.Errorf("readwrite: error parsing PomdpX probs for %q: %w", child, err)
 					}
 					allVals = append(allVals, vals...)
 				}
@@ -156,11 +189,142 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 
 				cpd, err := factors.NewTabularCPD(child, childInfo.card, values, nil, nil)
 				if err != nil {
-					return nil, fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+					return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
 				}
 				if err := bn.AddCPD(cpd); err != nil {
-					return nil, fmt.Errorf("readwrite: %w", err)
+					return fmt.Errorf("readwrite: %w", err)
 				}
+			}
+		} else {
+			// Conditional: parse entries with Instance/ProbTable pairs.
+			// Build state-to-index maps for parents.
+			parentStateIdx := make([]map[string]int, len(parents))
+			for i, p := range parents {
+				pi := varMap[p]
+				parentStateIdx[i] = make(map[string]int, pi.card)
+				for j, s := range pi.states {
+					parentStateIdx[i][s] = j
+				}
+			}
+
+			// Initialize values array: values[childState][parentConfig].
+			values := make([][]float64, childInfo.card)
+			for cs := 0; cs < childInfo.card; cs++ {
+				values[cs] = make([]float64, numParentConfigs)
+			}
+
+			// Check if entries use Instance tags or are flat tables.
+			hasInstances := false
+			for _, param := range cp.Params {
+				for _, entry := range param.Entries {
+					if strings.TrimSpace(entry.Instance) != "" {
+						hasInstances = true
+						break
+					}
+				}
+				if hasInstances {
+					break
+				}
+			}
+
+			if hasInstances {
+				// Parse entries with instance/probability pairs.
+				for _, param := range cp.Params {
+					for _, entry := range param.Entries {
+						instance := strings.TrimSpace(entry.Instance)
+						if instance == "" {
+							continue
+						}
+						instParts := strings.Fields(instance)
+
+						vals, err := xmlbifParseFloats(entry.ProbTable)
+						if err != nil {
+							return fmt.Errorf("readwrite: error parsing PomdpX probs for %q: %w", child, err)
+						}
+
+						if len(vals) != childInfo.card {
+							return fmt.Errorf("readwrite: PomdpX entry for %q has %d values, expected %d",
+								child, len(vals), childInfo.card)
+						}
+
+						// Instance parts are parent state names. Compute the parent config index.
+						if len(instParts) != len(parents) {
+							return fmt.Errorf("readwrite: PomdpX entry for %q has %d instance parts, expected %d parents",
+								child, len(instParts), len(parents))
+						}
+
+						pc := 0
+						stride := 1
+						for pi := len(parents) - 1; pi >= 0; pi-- {
+							stateIdx, ok := parentStateIdx[pi][instParts[pi]]
+							if !ok {
+								return fmt.Errorf("readwrite: PomdpX unknown parent state %q for parent %q",
+									instParts[pi], parents[pi])
+							}
+							pc += stateIdx * stride
+							stride *= evidenceCard[pi]
+						}
+
+						for cs := 0; cs < childInfo.card; cs++ {
+							values[cs][pc] = vals[cs]
+						}
+					}
+				}
+			} else {
+				// Flat table: all probabilities in order.
+				var allVals []float64
+				for _, param := range cp.Params {
+					for _, entry := range param.Entries {
+						vals, err := xmlbifParseFloats(entry.ProbTable)
+						if err != nil {
+							return fmt.Errorf("readwrite: error parsing PomdpX probs for %q: %w", child, err)
+						}
+						allVals = append(allVals, vals...)
+					}
+				}
+
+				expectedLen := childInfo.card * numParentConfigs
+				if len(allVals) != expectedLen {
+					return fmt.Errorf("readwrite: PomdpX table for %q has %d values, expected %d",
+						child, len(allVals), expectedLen)
+				}
+
+				// Flat table ordering: for each parent config, list child state probs.
+				idx := 0
+				for pc := 0; pc < numParentConfigs; pc++ {
+					for cs := 0; cs < childInfo.card; cs++ {
+						values[cs][pc] = allVals[idx]
+						idx++
+					}
+				}
+			}
+
+			cpd, err := factors.NewTabularCPD(child, childInfo.card, values, parents, evidenceCard)
+			if err != nil {
+				return fmt.Errorf("readwrite: failed to create CPD for %q: %w", child, err)
+			}
+			if err := bn.AddCPD(cpd); err != nil {
+				return fmt.Errorf("readwrite: %w", err)
+			}
+		}
+
+		return nil
+	}
+
+	// Parse initial belief (unconditional CPDs).
+	if doc.InitBelief != nil {
+		for _, cp := range doc.InitBelief.CondProbs {
+			if err := parseCondProb(cp); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Parse state transition function (conditional CPDs).
+	if doc.StateTransition != nil {
+		for _, cp := range doc.StateTransition.CondProbs {
+			if err := parseCondProb(cp); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -186,9 +350,10 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 	return bn, nil
 }
 
-// WritePomdpX serializes a BayesianNetwork to PomdpX format (basic stub).
-// Only unconditional variables are supported. Conditional distributions are
-// written as state transition functions.
+// WritePomdpX serializes a BayesianNetwork to PomdpX format with full
+// conditional probability table support. Unconditional distributions are
+// written in InitialStateBelief; conditional distributions are written in
+// StateTransitionFunction with Entry elements containing Instance tags.
 func WritePomdpX(w io.Writer, bn *models.BayesianNetwork) error {
 	nodes := bn.Nodes()
 
@@ -243,22 +408,41 @@ func WritePomdpX(w io.Writer, bn *models.BayesianNetwork) error {
 				}},
 			})
 		} else {
-			// Conditional: state transition.
-			var parts []string
+			// Conditional: write Entry elements with Instance tags for each
+			// parent configuration, mapping parent state names to probabilities.
+			var entries []pomdpxEntry
 			for pc := 0; pc < numParentConfigs; pc++ {
+				// Decompose parent config index into parent state names.
+				instanceParts := make([]string, len(evidence))
+				remainder := pc
+				for pi := len(evidence) - 1; pi >= 0; pi-- {
+					stateIdx := remainder % evidenceCard[pi]
+					remainder /= evidenceCard[pi]
+					parentStates := bn.GetStates(evidence[pi])
+					if stateIdx < len(parentStates) {
+						instanceParts[pi] = parentStates[stateIdx]
+					} else {
+						instanceParts[pi] = fmt.Sprintf("s%d", stateIdx)
+					}
+				}
+
+				var parts []string
 				for cs := 0; cs < childCard; cs++ {
 					parts = append(parts, formatFloat(data[cs*numParentConfigs+pc]))
 				}
+
+				entries = append(entries, pomdpxEntry{
+					Instance:  strings.Join(instanceParts, " "),
+					ProbTable: strings.Join(parts, " "),
+				})
 			}
 
 			transCondProbs = append(transCondProbs, pomdpxCondProb{
 				Var:     []pomdpxVar{{Name: node}},
 				Parents: []pomdpxParent{{Names: strings.Join(evidence, " ")}},
 				Params: []pomdpxParam{{
-					Type: "TBL",
-					Entries: []pomdpxEntry{{
-						ProbTable: strings.Join(parts, " "),
-					}},
+					Type:    "TBL",
+					Entries: entries,
 				}},
 			})
 		}
