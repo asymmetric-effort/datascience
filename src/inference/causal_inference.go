@@ -590,28 +590,37 @@ func (ci *CausalInference) GetTotalConditionalIVs(treatment, outcome string) map
 	return result
 }
 
+// canIdentifyByBackdoor returns true if there exists at least one valid
+// backdoor adjustment set for the causal effect of treatment on outcome.
+func (ci *CausalInference) canIdentifyByBackdoor(treatment, outcome string) bool {
+	return len(ci.GetAllBackdoorAdjustmentSets(treatment, outcome)) > 0
+}
+
+// canIdentifyByFrontdoor returns true if there exists at least one valid
+// front-door adjustment set for the causal effect of treatment on outcome.
+func (ci *CausalInference) canIdentifyByFrontdoor(treatment, outcome string) bool {
+	return len(ci.GetAllFrontdoorAdjustmentSets(treatment, outcome)) > 0
+}
+
+// canIdentifyByIV returns true if there exists at least one instrumental
+// variable for the causal effect of treatment on outcome.
+func (ci *CausalInference) canIdentifyByIV(treatment, outcome string) bool {
+	return len(ci.GetIVs(treatment, outcome)) > 0
+}
+
 // IdentificationMethod returns which identification method applies for
 // estimating the causal effect of treatment on outcome.
 // Returns "backdoor", "frontdoor", "iv", or "none".
 func (ci *CausalInference) IdentificationMethod(treatment, outcome string) string {
-	// Check backdoor.
-	backdoorSets := ci.GetAllBackdoorAdjustmentSets(treatment, outcome)
-	if len(backdoorSets) > 0 {
+	if ci.canIdentifyByBackdoor(treatment, outcome) {
 		return "backdoor"
 	}
-
-	// Check frontdoor.
-	frontdoorSets := ci.GetAllFrontdoorAdjustmentSets(treatment, outcome)
-	if len(frontdoorSets) > 0 {
+	if ci.canIdentifyByFrontdoor(treatment, outcome) {
 		return "frontdoor"
 	}
-
-	// Check IV.
-	ivs := ci.GetIVs(treatment, outcome)
-	if len(ivs) > 0 {
+	if ci.canIdentifyByIV(treatment, outcome) {
 		return "iv"
 	}
-
 	return "none"
 }
 
