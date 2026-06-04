@@ -15,7 +15,7 @@ function App() {
       <div id="app">
         <Nav />
         <main>
-          <Route path="/" component={Home} />
+          <Route path="/" component={Home} exact />
           <Route path="/docs" component={Docs} />
           <Route path="/cli" component={Cli} />
           <Route path="/api" component={Api} />
