@@ -11,7 +11,7 @@ import (
 )
 
 // fixturesPath is the path to the scipy-generated JSON fixtures.
-const fixturesPath = "../../tests/python/generators/scigo_fixtures.json"
+const fixturesPath = "../../tests/fixtures/scigo/fixtures.json"
 
 // loadFixtures reads and parses the JSON fixture file.
 func loadFixtures(t *testing.T) map[string]json.RawMessage {

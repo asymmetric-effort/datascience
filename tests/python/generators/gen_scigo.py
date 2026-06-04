@@ -285,8 +285,11 @@ fixtures["cdist_euclidean"] = {
 # Write output
 # ---------------------------------------------------------------------------
 
-output_path = "tests/python/generators/scigo_fixtures.json"
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+output_path = os.path.join(script_dir, "..", "..", "fixtures", "scigo", "fixtures.json")
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
 with open(output_path, "w") as f:
-    json.dump(fixtures, f, indent=2)
+    json.dump(fixtures, f, indent=2, sort_keys=True)
 
 print(f"Wrote {len(fixtures)} fixture groups to {output_path}")
