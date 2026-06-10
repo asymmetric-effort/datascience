@@ -5,7 +5,7 @@ export function Api() {
   useHead({
     title: "API Reference — datascience",
     description: "Complete Go API reference for datascience: PGM models, factors, inference, sampling, learning, TensorFlow, BLAS, financial modeling, and library packages.",
-    canonical: "https://pgmgo.asymmetric-effort.com/#/api",
+    canonical: "https://datascience.asymmetric-effort.com/#/api",
   });
 
   return (

@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://pgmgo.asymmetric-effort.com/</loc>
+    <loc>https://datascience.asymmetric-effort.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://pgmgo.asymmetric-effort.com/#/docs</loc>
+    <loc>https://datascience.asymmetric-effort.com/#/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pgmgo.asymmetric-effort.com/#/tutorials</loc>
+    <loc>https://datascience.asymmetric-effort.com/#/tutorials</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pgmgo.asymmetric-effort.com/#/cli</loc>
+    <loc>https://datascience.asymmetric-effort.com/#/libraries</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pgmgo.asymmetric-effort.com/#/api</loc>
+    <loc>https://datascience.asymmetric-effort.com/#/api</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

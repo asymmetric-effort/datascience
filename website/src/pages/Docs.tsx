@@ -5,7 +5,7 @@ export function Docs() {
   useHead({
     title: "Documentation — datascience",
     description: "Comprehensive documentation for datascience, a pure Go library for data science and machine learning. PGMs, TensorFlow, BLAS, financial modeling, and more.",
-    canonical: "https://pgmgo.asymmetric-effort.com/#/docs",
+    canonical: "https://datascience.asymmetric-effort.com/#/docs",
   });
 
   return (

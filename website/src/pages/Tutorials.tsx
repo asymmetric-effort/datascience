@@ -5,7 +5,7 @@ export function Tutorials() {
   useHead({
     title: "Tutorials — datascience",
     description: "Step-by-step tutorials for building Bayesian networks, inference, structure learning, causal inference, file formats, sampling, advanced models, and internal libraries with datascience.",
-    canonical: "https://pgmgo.asymmetric-effort.com/#/tutorials",
+    canonical: "https://datascience.asymmetric-effort.com/#/tutorials",
   });
 
   return (

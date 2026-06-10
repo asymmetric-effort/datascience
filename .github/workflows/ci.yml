@@ -152,7 +152,7 @@ jobs:
 
       - name: Verify website is live
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" https://pgmgo.asymmetric-effort.com/)
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://datascience.asymmetric-effort.com/)
           echo "HTTP status: $status"
           if [ "$status" -ne 200 ]; then
             echo "Website returned non-200 status"
@@ -161,26 +161,26 @@ jobs:
 
       - name: Verify website content
         run: |
-          body=$(curl -s https://pgmgo.asymmetric-effort.com/)
+          body=$(curl -s https://datascience.asymmetric-effort.com/)
           echo "$body" | grep -q '<div id="root">' || { echo "Missing root element"; exit 1; }
           echo "Website content verified"
 
       - name: Verify CNAME
         run: |
-          body=$(curl -s https://pgmgo.asymmetric-effort.com/CNAME)
-          echo "$body" | grep -q "pgmgo.asymmetric-effort.com" || { echo "CNAME mismatch"; exit 1; }
+          body=$(curl -s https://datascience.asymmetric-effort.com/CNAME)
+          echo "$body" | grep -q "datascience.asymmetric-effort.com" || { echo "CNAME mismatch"; exit 1; }
           echo "CNAME verified"
 
       - name: Verify robots.txt
         run: |
-          body=$(curl -s https://pgmgo.asymmetric-effort.com/robots.txt)
+          body=$(curl -s https://datascience.asymmetric-effort.com/robots.txt)
           echo "$body" | grep -q "Sitemap:" || { echo "Missing sitemap in robots.txt"; exit 1; }
           echo "robots.txt verified"
 
       - name: Verify sitemap.xml
         run: |
-          body=$(curl -s https://pgmgo.asymmetric-effort.com/sitemap.xml)
-          echo "$body" | grep -q "pgmgo.asymmetric-effort.com" || { echo "Sitemap missing URLs"; exit 1; }
+          body=$(curl -s https://datascience.asymmetric-effort.com/sitemap.xml)
+          echo "$body" | grep -q "datascience.asymmetric-effort.com" || { echo "Sitemap missing URLs"; exit 1; }
           echo "sitemap.xml verified"
 
   # Stage 5: Index on Go module proxy (tagged versions only)

@@ -5,7 +5,7 @@ export function Libraries() {
   useHead({
     title: "Libraries — datascience",
     description: "Overview of all library packages in datascience: numgo, scigo, graphgo, tabgo, gpu, pgm, and tensorflow.",
-    canonical: "https://pgmgo.asymmetric-effort.com/#/libraries",
+    canonical: "https://datascience.asymmetric-effort.com/#/libraries",
   });
 
   return (

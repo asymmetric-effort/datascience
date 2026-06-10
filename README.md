@@ -189,7 +189,7 @@ datascience/
 
 ## Documentation
 
-- [Project Website](https://pgmgo.asymmetric-effort.com)
+- [Project Website](https://datascience.asymmetric-effort.com)
 - [GoDoc](https://pkg.go.dev/github.com/asymmetric-effort/datascience)
 - [Examples](examples/)
 

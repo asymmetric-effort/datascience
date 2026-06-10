@@ -4,11 +4,11 @@ export function Home() {
   useHead({
     title: "datascience — Data Science and Machine Learning in Go",
     description: "A comprehensive pure Go library for data science and machine learning. PGMs, TensorFlow/deep learning, BLAS, financial modeling, and more.",
-    canonical: "https://pgmgo.asymmetric-effort.com/",
+    canonical: "https://datascience.asymmetric-effort.com/",
     og: {
       title: "datascience — Data Science and Machine Learning in Go",
       description: "A comprehensive pure Go library for data science and machine learning.",
-      url: "https://pgmgo.asymmetric-effort.com/",
+      url: "https://datascience.asymmetric-effort.com/",
     },
   });
 
