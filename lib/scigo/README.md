@@ -1,9 +1,9 @@
 # scigo
 
-Package `scigo` provides scientific computing primitives including statistical distributions, hypothesis testing, optimization, sparse matrices, and special functions. It serves as the SciPy equivalent for pgmgo.
+Package `scigo` provides scientific computing primitives including statistical distributions, hypothesis testing, optimization, sparse matrices, and special functions. It serves as the SciPy equivalent for datascience.
 
 ```
-import "github.com/asymmetric-effort/pgmgo/lib/scigo"
+import "github.com/asymmetric-effort/datascience/lib/scigo"
 ```
 
 ## Probability Distributions

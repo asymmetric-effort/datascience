@@ -1,21 +1,12 @@
 SHELL := /bin/bash
-.PHONY: all build test test-unit test-integration test-e2e lint fmt clean \
+.PHONY: all test test-unit test-integration test-e2e lint fmt clean \
         coverage website website-dev website-test generate-fixtures verify-fixtures \
         install-hooks install-skills
 
 SKILLS_VERSION := v0.0.28
 COVERAGE_THRESHOLD := 0
 
-all: lint test build
-
-# --- Build ---
-
-build:
-	@for cmd in cmd/*/; do \
-		name=$$(basename "$$cmd"); \
-		echo "Building $$name..."; \
-		go build -o "bin/$$name" "./$$cmd"; \
-	done
+all: lint test
 
 # --- Linting ---
 
@@ -91,4 +82,4 @@ install-skills:
 # --- Clean ---
 
 clean:
-	rm -rf bin/ website/dist/ coverage.out
+	rm -rf website/dist/ coverage.out

@@ -3,8 +3,8 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Api() {
   useHead({
-    title: "API Reference — pgmgo",
-    description: "Complete Go API reference for pgmgo: models, factors, inference, sampling, learning, CI tests, scoring, identification, prediction, metrics, readwrite, base, and library packages.",
+    title: "API Reference — datascience",
+    description: "Complete Go API reference for datascience: PGM models, factors, inference, sampling, learning, TensorFlow, BLAS, financial modeling, and library packages.",
     canonical: "https://pgmgo.asymmetric-effort.com/#/api",
   });
 
@@ -14,7 +14,7 @@ export function Api() {
 
       <nav class="page-toc">
         <strong>Packages:</strong>{" "}
-        <ScrollLink to="import-paths">Import Paths</ScrollLink> | <ScrollLink to="api-models">Models</ScrollLink> | <ScrollLink to="api-factors">Factors</ScrollLink> | <ScrollLink to="api-inference">Inference</ScrollLink> | <ScrollLink to="api-sampling">Sampling</ScrollLink> | <ScrollLink to="api-learning">Learning</ScrollLink> | <ScrollLink to="api-ci-tests">CI Tests</ScrollLink> | <ScrollLink to="api-structure-score">Structure Scores</ScrollLink> | <ScrollLink to="api-identification">Identification</ScrollLink> | <ScrollLink to="api-prediction">Prediction</ScrollLink> | <ScrollLink to="api-metrics">Metrics</ScrollLink> | <ScrollLink to="api-readwrite">Readwrite</ScrollLink> | <ScrollLink to="api-base">Base</ScrollLink> | <ScrollLink to="api-independencies">Independencies</ScrollLink> | <ScrollLink to="api-config">Config</ScrollLink> | <ScrollLink to="api-utils">Utils</ScrollLink> | <ScrollLink to="api-numgo">numgo</ScrollLink> | <ScrollLink to="api-scigo">scigo</ScrollLink> | <ScrollLink to="api-graphgo">graphgo</ScrollLink> | <ScrollLink to="api-tabgo">tabgo</ScrollLink> | <ScrollLink to="api-gpu">gpu</ScrollLink> | <ScrollLink to="api-example-models">example_models</ScrollLink>
+        <ScrollLink to="import-paths">Import Paths</ScrollLink> | <ScrollLink to="api-models">Models</ScrollLink> | <ScrollLink to="api-factors">Factors</ScrollLink> | <ScrollLink to="api-inference">Inference</ScrollLink> | <ScrollLink to="api-sampling">Sampling</ScrollLink> | <ScrollLink to="api-learning">Learning</ScrollLink> | <ScrollLink to="api-ci-tests">CI Tests</ScrollLink> | <ScrollLink to="api-structure-score">Structure Scores</ScrollLink> | <ScrollLink to="api-identification">Identification</ScrollLink> | <ScrollLink to="api-prediction">Prediction</ScrollLink> | <ScrollLink to="api-metrics">Metrics</ScrollLink> | <ScrollLink to="api-readwrite">Readwrite</ScrollLink> | <ScrollLink to="api-base">Base</ScrollLink> | <ScrollLink to="api-independencies">Independencies</ScrollLink> | <ScrollLink to="api-config">Config</ScrollLink> | <ScrollLink to="api-utils">Utils</ScrollLink> | <ScrollLink to="api-numgo">numgo</ScrollLink> | <ScrollLink to="api-scigo">scigo</ScrollLink> | <ScrollLink to="api-graphgo">graphgo</ScrollLink> | <ScrollLink to="api-tabgo">tabgo</ScrollLink> | <ScrollLink to="api-gpu">gpu</ScrollLink> | <ScrollLink to="api-tensorflow">tensorflow</ScrollLink> | <ScrollLink to="api-example-models">example_models</ScrollLink>
       </nav>
 
       {/* ============================================================ */}
@@ -23,33 +23,36 @@ export function Api() {
       <section class="section" id="import-paths">
         <h2>Import Paths</h2>
         <pre><code>{`import (
-    // Core packages (src/)
-    "github.com/asymmetric-effort/pgmgo/src/base"
-    "github.com/asymmetric-effort/pgmgo/src/models"
-    "github.com/asymmetric-effort/pgmgo/src/factors"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
-    "github.com/asymmetric-effort/pgmgo/src/sampling"
-    "github.com/asymmetric-effort/pgmgo/src/learning"
-    "github.com/asymmetric-effort/pgmgo/src/ci_tests"
-    "github.com/asymmetric-effort/pgmgo/src/structure_score"
-    "github.com/asymmetric-effort/pgmgo/src/identification"
-    "github.com/asymmetric-effort/pgmgo/src/prediction"
-    "github.com/asymmetric-effort/pgmgo/src/metrics"
-    "github.com/asymmetric-effort/pgmgo/src/independencies"
-    "github.com/asymmetric-effort/pgmgo/src/readwrite"
-    "github.com/asymmetric-effort/pgmgo/src/config"
-    "github.com/asymmetric-effort/pgmgo/src/utils"
+    // PGM packages (lib/pgm/)
+    "github.com/asymmetric-effort/datascience/lib/pgm/base"
+    "github.com/asymmetric-effort/datascience/lib/pgm/models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/factors"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
+    "github.com/asymmetric-effort/datascience/lib/pgm/sampling"
+    "github.com/asymmetric-effort/datascience/lib/pgm/learning"
+    "github.com/asymmetric-effort/datascience/lib/pgm/ci_tests"
+    "github.com/asymmetric-effort/datascience/lib/pgm/structure_score"
+    "github.com/asymmetric-effort/datascience/lib/pgm/identification"
+    "github.com/asymmetric-effort/datascience/lib/pgm/prediction"
+    "github.com/asymmetric-effort/datascience/lib/pgm/metrics"
+    "github.com/asymmetric-effort/datascience/lib/pgm/independencies"
+    "github.com/asymmetric-effort/datascience/lib/pgm/readwrite"
+    "github.com/asymmetric-effort/datascience/lib/pgm/config"
+    "github.com/asymmetric-effort/datascience/lib/pgm/utils"
 
-    // Library packages (lib/)
-    "github.com/asymmetric-effort/pgmgo/lib/numgo"
-    "github.com/asymmetric-effort/pgmgo/lib/scigo"
-    "github.com/asymmetric-effort/pgmgo/lib/graphgo"
-    "github.com/asymmetric-effort/pgmgo/lib/tabgo"
-    "github.com/asymmetric-effort/pgmgo/lib/gpu"
+    // Primitive library packages (lib/)
+    "github.com/asymmetric-effort/datascience/lib/numgo"
+    "github.com/asymmetric-effort/datascience/lib/scigo"
+    "github.com/asymmetric-effort/datascience/lib/graphgo"
+    "github.com/asymmetric-effort/datascience/lib/tabgo"
+    "github.com/asymmetric-effort/datascience/lib/gpu"
+
+    // Deep learning (lib/tensorflow/)
+    "github.com/asymmetric-effort/datascience/lib/tensorflow"
 
     // Built-in example models and datasets
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/examples/datasets"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/examples/datasets"
 )`}</code></pre>
       </section>
 
@@ -58,7 +61,7 @@ export function Api() {
       {/* ============================================================ */}
       <section class="section" id="api-models">
         <h2>models -- Probabilistic Model Types</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/models</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/models</code></p>
         <p>Provides 13 probabilistic graphical model types. All model types share a common interface for node/edge management, state definition, and CPD assignment.</p>
 
         <h3>Types</h3>
@@ -149,7 +152,7 @@ fmt.Println("Valid:", err == nil)`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-factors">
         <h2>factors -- Factor Representations</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/factors</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/factors</code></p>
         <p>Factor types and operations for probabilistic models. Factors are the building blocks of inference.</p>
 
         <h3>Types</h3>
@@ -250,7 +253,7 @@ fmt.Println("Sum after normalize:", normalized.Values().Sum())  // 1.0`}</code><
       {/* ============================================================ */}
       <section class="section" id="api-inference">
         <h2>inference -- Inference Algorithms</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/inference</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/inference</code></p>
         <p>7 inference algorithms for computing posterior probabilities and MAP assignments.</p>
 
         <h3>Types</h3>
@@ -345,7 +348,7 @@ result, _ = ci.Query([]string{"Y"}, map[string]int{"X": 1}, map[string]int{"Z": 
       {/* ============================================================ */}
       <section class="section" id="api-sampling">
         <h2>sampling -- Sampling Methods</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/sampling</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/sampling</code></p>
 
         <h3>Types</h3>
         <table>
@@ -404,7 +407,7 @@ gibbsSamples, _ := gs.Sample(1000, 100, 2, map[string]int{"A": 1})`}</code></pre
       {/* ============================================================ */}
       <section class="section" id="api-learning">
         <h2>learning -- Learning Algorithms</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/learning</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/learning</code></p>
         <p>15+ algorithms for parameter estimation and structure learning.</p>
 
         <h3>Parameter Learning</h3>
@@ -479,7 +482,7 @@ result, _ := ve.Query([]string{"Y"}, map[string]int{"X": 1})`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-ci-tests">
         <h2>ci_tests -- Conditional Independence Tests</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/ci_tests</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/ci_tests</code></p>
         <p>16 conditional independence tests used by constraint-based structure learning algorithms.</p>
 
         <h3>Tests by Category</h3>
@@ -504,8 +507,6 @@ result, _ := ve.Query([]string{"Y"}, map[string]int{"X": 1})`}</code></pre>
 
         <h3>Common Signature</h3>
         <pre><code>{`func ChiSquare(x, y string, z []string, data *tabgo.DataFrame, significance float64) (statistic float64, pValue float64, independent bool)`}</code></pre>
-        <p>Parameters: <code>x</code> and <code>y</code> are variables to test, <code>z</code> is the conditioning set, <code>data</code> is the dataset, <code>significance</code> is the alpha level.</p>
-        <p>Returns: test statistic, p-value, and whether X is independent of Y given Z at the given significance level.</p>
 
         <h3>Example</h3>
         <pre><code>{`stat, pValue, indep := ci_tests.ChiSquare("X", "Y", []string{"Z"}, data, 0.05)
@@ -520,7 +521,7 @@ fmt.Printf("FisherZ=%.3f, p=%.4f, independent=%v\\n", stat2, pValue2, indep2)`}<
       {/* ============================================================ */}
       <section class="section" id="api-structure-score">
         <h2>structure_score -- Scoring Functions</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/structure_score</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/structure_score</code></p>
         <p>13 scoring function variants for score-based structure learning.</p>
 
         <h3>Types</h3>
@@ -559,7 +560,7 @@ bn, _ := hc.Estimate()`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-identification">
         <h2>identification -- Causal Effect Identification</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/identification</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/identification</code></p>
 
         <h3>Types</h3>
         <table>
@@ -587,7 +588,7 @@ frontdoorSet, err := fd.GetFrontdoorSet("Treatment", "Outcome")
       {/* ============================================================ */}
       <section class="section" id="api-prediction">
         <h2>prediction -- Causal Prediction</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/prediction</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/prediction</code></p>
 
         <h3>Types</h3>
         <table>
@@ -612,7 +613,7 @@ fmt.Println("Average Treatment Effect:", ate)`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-metrics">
         <h2>metrics -- Model Evaluation</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/metrics</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/metrics</code></p>
 
         <h3>Functions</h3>
         <table>
@@ -645,7 +646,7 @@ fmt.Printf("Precision=%.3f, Recall=%.3f\\n", precision, recall)`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-readwrite">
         <h2>readwrite -- File Format I/O</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/readwrite</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/readwrite</code></p>
         <p>10 file format readers and writers. All read functions take <code>io.Reader</code>, all write functions take <code>io.Writer</code>.</p>
 
         <h3>Functions</h3>
@@ -684,7 +685,7 @@ out.Close()`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-base">
         <h2>base -- Foundational Graph Types</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/base</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/base</code></p>
         <p>7 graph types that serve as the structural foundation for all model types.</p>
 
         <h3>Types</h3>
@@ -722,7 +723,7 @@ descendants := dag.Descendants("X")`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-independencies">
         <h2>independencies -- Independence Assertions</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/independencies</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/independencies</code></p>
 
         <h3>Types</h3>
         <table>
@@ -747,7 +748,7 @@ for _, assertion := range indeps.Assertions() {
       {/* ============================================================ */}
       <section class="section" id="api-config">
         <h2>config -- Configuration</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/config</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/config</code></p>
 
         <h3>Types</h3>
         <table>
@@ -769,7 +770,7 @@ for _, assertion := range indeps.Assertions() {
       {/* ============================================================ */}
       <section class="section" id="api-utils">
         <h2>utils -- Shared Utilities</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/src/utils</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/utils</code></p>
         <p>
           Shared parsing, optimization, and compatibility utilities. Includes helper functions
           for set operations, string parsing, numerical utilities, and other common operations
@@ -781,8 +782,8 @@ for _, assertion := range indeps.Assertions() {
       {/* NUMGO */}
       {/* ============================================================ */}
       <section class="section" id="api-numgo">
-        <h2>numgo -- N-Dimensional Arrays (numpy equivalent)</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/lib/numgo</code></p>
+        <h2>numgo -- N-Dimensional Arrays and BLAS (numpy equivalent)</h2>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/numgo</code></p>
 
         <h3>Types</h3>
         <table>
@@ -829,21 +830,6 @@ for _, assertion := range indeps.Assertions() {
           </tbody>
         </table>
 
-        <h3>Vector Methods</h3>
-        <table>
-          <thead>
-            <tr><th>Method</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Dot(other *Vector) float64</code></td><td>Dot product</td></tr>
-            <tr><td><code>Norm() float64</code></td><td>L2 norm</td></tr>
-            <tr><td><code>Add(other *Vector) *Vector</code></td><td>Element-wise addition</td></tr>
-            <tr><td><code>Scale(s float64) *Vector</code></td><td>Scalar multiplication</td></tr>
-            <tr><td><code>Data() []float64</code></td><td>Get underlying data</td></tr>
-            <tr><td><code>Len() int</code></td><td>Vector length</td></tr>
-          </tbody>
-        </table>
-
         <h3>Example</h3>
         <pre><code>{`m := numgo.NewMatrixFromData(2, 2, []float64{1, 2, 3, 4})
 det := m.Det()     // -2
@@ -859,7 +845,7 @@ norm := v.Norm()   // sqrt(14)`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-scigo">
         <h2>scigo -- Statistical Computing (scipy equivalent)</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/lib/scigo</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/scigo</code></p>
 
         <h3>Distributions</h3>
         <table>
@@ -877,30 +863,6 @@ norm := v.Norm()   // sqrt(14)`}</code></pre>
           </tbody>
         </table>
 
-        <h3>Optimization</h3>
-        <table>
-          <thead>
-            <tr><th>Function</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Minimize(f func(float64) float64, low, high float64) float64</code></td><td>Minimize a univariate function on [low, high]</td></tr>
-            <tr><td><code>GradientDescent(f, grad func([]float64) float64, x0 []float64, lr float64, maxIter int) []float64</code></td><td>Gradient descent optimization</td></tr>
-            <tr><td><code>NewtonMethod(f, fprime func(float64) float64, x0 float64, tol float64, maxIter int) float64</code></td><td>Newton's method for root finding</td></tr>
-          </tbody>
-        </table>
-
-        <h3>Statistics</h3>
-        <table>
-          <thead>
-            <tr><th>Function</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Mean(data []float64) float64</code></td><td>Arithmetic mean</td></tr>
-            <tr><td><code>Std(data []float64) float64</code></td><td>Standard deviation</td></tr>
-            <tr><td><code>PearsonCorrelation(x, y []float64) float64</code></td><td>Pearson correlation coefficient</td></tr>
-          </tbody>
-        </table>
-
         <h3>Example</h3>
         <pre><code>{`n := scigo.NewNormal(0, 1)
 fmt.Println("CDF(1.96):", n.CDF(1.96))   // ~0.975
@@ -915,7 +877,7 @@ pValue := 1.0 - chi2.CDF(11.07)  // ~0.05`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-graphgo">
         <h2>graphgo -- Graph Algorithms (networkx equivalent)</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/lib/graphgo</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/graphgo</code></p>
 
         <h3>Types</h3>
         <table>
@@ -928,46 +890,6 @@ pValue := 1.0 - chi2.CDF(11.07)  // ~0.05`}</code></pre>
             <tr><td><code>PDAG</code></td><td><code>NewPDAG()</code></td><td>Partially directed acyclic graph</td></tr>
           </tbody>
         </table>
-
-        <h3>DiGraph Methods</h3>
-        <table>
-          <thead>
-            <tr><th>Method</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>AddNode(name string)</code></td><td>Add a node</td></tr>
-            <tr><td><code>AddEdge(from, to string)</code></td><td>Add a directed edge</td></tr>
-            <tr><td><code>RemoveNode(name string)</code></td><td>Remove a node and edges</td></tr>
-            <tr><td><code>RemoveEdge(from, to string)</code></td><td>Remove an edge</td></tr>
-            <tr><td><code>Nodes() []string</code></td><td>List nodes</td></tr>
-            <tr><td><code>Edges() [][2]string</code></td><td>List edges</td></tr>
-            <tr><td><code>Successors(name string) []string</code></td><td>Children of a node</td></tr>
-            <tr><td><code>Predecessors(name string) []string</code></td><td>Parents of a node</td></tr>
-            <tr><td><code>HasCycle() bool</code></td><td>Detect cycles</td></tr>
-            <tr><td><code>TopologicalSort() []string</code></td><td>Topological ordering</td></tr>
-            <tr><td><code>DSeparation(x, y, z []string) bool</code></td><td>Test d-separation</td></tr>
-            <tr><td><code>MoralGraph() *Graph</code></td><td>Convert to moral graph</td></tr>
-          </tbody>
-        </table>
-
-        <h3>Graph Methods</h3>
-        <table>
-          <thead>
-            <tr><th>Method</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>AddEdge(a, b string)</code></td><td>Add undirected edge</td></tr>
-            <tr><td><code>Neighbors(name string) []string</code></td><td>Get neighbors</td></tr>
-            <tr><td><code>Degree(name string) int</code></td><td>Get degree</td></tr>
-            <tr><td><code>ConnectedComponents() [][]string</code></td><td>Find connected components</td></tr>
-          </tbody>
-        </table>
-
-        <h3>Algorithms</h3>
-        <p>
-          Topological sort, d-separation, moral graph, triangulation, maximum cardinality search,
-          clique finding, connected components, shortest paths, cycle detection, ancestors, descendants.
-        </p>
 
         <h3>Example</h3>
         <pre><code>{`g := graphgo.NewDiGraph()
@@ -987,7 +909,7 @@ fmt.Println("Has cycle:", g.HasCycle())           // false`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-tabgo">
         <h2>tabgo -- Tabular Data (pandas equivalent)</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/lib/tabgo</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/tabgo</code></p>
 
         <h3>Types</h3>
         <table>
@@ -997,56 +919,6 @@ fmt.Println("Has cycle:", g.HasCycle())           // false`}</code></pre>
           <tbody>
             <tr><td><code>DataFrame</code></td><td>Tabular data with named columns, filtering, groupby</td></tr>
             <tr><td><code>Series</code></td><td>Single column with value counts, unique, statistics</td></tr>
-          </tbody>
-        </table>
-
-        <h3>DataFrame Constructors</h3>
-        <pre><code>{`// From CSV file
-df, err := tabgo.ReadCSV("data.csv")
-
-// From map
-df := tabgo.NewDataFrame(map[string][]interface{}{
-    "Name":  {"Alice", "Bob"},
-    "Score": {95, 87},
-})`}</code></pre>
-
-        <h3>DataFrame Methods</h3>
-        <table>
-          <thead>
-            <tr><th>Method</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>NRows() int</code></td><td>Number of rows</td></tr>
-            <tr><td><code>Columns() []string</code></td><td>Column names</td></tr>
-            <tr><td><code>Column(name string) *Series</code></td><td>Get a column as Series</td></tr>
-            <tr><td><code>Filter(fn func(map[string]interface{}) bool) *DataFrame</code></td><td>Filter rows by predicate</td></tr>
-            <tr><td><code>GroupBy(col string) *GroupedDataFrame</code></td><td>Group by column</td></tr>
-          </tbody>
-        </table>
-
-        <h3>Series Methods</h3>
-        <table>
-          <thead>
-            <tr><th>Method</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Unique() []interface{}</code></td><td>Unique values</td></tr>
-            <tr><td><code>ValueCounts() map[interface{}]int</code></td><td>Count of each value</td></tr>
-            <tr><td><code>Float64() []float64</code></td><td>Convert to float64 slice</td></tr>
-          </tbody>
-        </table>
-
-        <h3>I/O Functions</h3>
-        <table>
-          <thead>
-            <tr><th>Function</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>ReadCSV(path string) (*DataFrame, error)</code></td><td>Read CSV file</td></tr>
-            <tr><td><code>WriteCSV(df *DataFrame, path string) error</code></td><td>Write CSV file</td></tr>
-            <tr><td><code>ReadParquet(path string) (*DataFrame, error)</code></td><td>Read Parquet file</td></tr>
-            <tr><td><code>WriteParquet(df *DataFrame, path string) error</code></td><td>Write Parquet file</td></tr>
-            <tr><td><code>ReadXLSX(path string) (*DataFrame, error)</code></td><td>Read Excel file</td></tr>
           </tbody>
         </table>
 
@@ -1067,10 +939,24 @@ tabgo.WriteCSV(df, "output.csv")`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-gpu">
         <h2>gpu -- GPU Compute Backend</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/lib/gpu</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/gpu</code></p>
         <p>
           Optional GPU acceleration for compute-intensive operations. Provides GPU-backed
-          matrix operations and factor computations for large-scale inference and learning.
+          matrix operations and factor computations for large-scale inference, learning,
+          and deep learning training.
+        </p>
+      </section>
+
+      {/* ============================================================ */}
+      {/* TENSORFLOW */}
+      {/* ============================================================ */}
+      <section class="section" id="api-tensorflow">
+        <h2>tensorflow -- Deep Learning</h2>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/lib/tensorflow</code></p>
+        <p>
+          TensorFlow-compatible deep learning in pure Go. Provides neural network construction,
+          training, and inference capabilities. Builds on <code>numgo</code> for tensor operations
+          and <code>gpu</code> for optional hardware acceleration.
         </p>
       </section>
 
@@ -1079,7 +965,7 @@ tabgo.WriteCSV(df, "output.csv")`}</code></pre>
       {/* ============================================================ */}
       <section class="section" id="api-example-models">
         <h2>example_models -- Built-in Models</h2>
-        <p>Import: <code>github.com/asymmetric-effort/pgmgo/example_models</code></p>
+        <p>Import: <code>github.com/asymmetric-effort/datascience/example_models</code></p>
 
         <h3>Functions</h3>
         <table>

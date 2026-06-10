@@ -1,9 +1,9 @@
 # numgo
 
-Package `numgo` provides n-dimensional array operations, linear algebra, and numerical primitives. It serves as the NumPy equivalent for pgmgo.
+Package `numgo` provides n-dimensional array operations, linear algebra, and numerical primitives. It serves as the NumPy equivalent for datascience.
 
 ```
-import "github.com/asymmetric-effort/pgmgo/lib/numgo"
+import "github.com/asymmetric-effort/datascience/lib/numgo"
 ```
 
 ## NDArray Creation

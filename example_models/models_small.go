@@ -2,7 +2,7 @@ package example_models
 
 // This file contains small Bayesian network models (< 10 nodes) with full CPDs.
 
-import "github.com/asymmetric-effort/pgmgo/src/models"
+import "github.com/asymmetric-effort/datascience/lib/pgm/models"
 
 // Survey returns the Survey Bayesian network with 6 nodes.
 // This network models the relationship between age, sex, education,

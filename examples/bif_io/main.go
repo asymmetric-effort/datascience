@@ -8,8 +8,8 @@ import (
 	"log"
 	"math"
 
-	"github.com/asymmetric-effort/pgmgo/example_models"
-	"github.com/asymmetric-effort/pgmgo/src/readwrite"
+	"github.com/asymmetric-effort/datascience/example_models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/readwrite"
 )
 
 func main() {

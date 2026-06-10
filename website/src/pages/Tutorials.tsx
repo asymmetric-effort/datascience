@@ -3,8 +3,8 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Tutorials() {
   useHead({
-    title: "Tutorials — pgmgo",
-    description: "Step-by-step tutorials for building Bayesian networks, inference, structure learning, causal inference, file formats, sampling, advanced models, and internal libraries with pgmgo.",
+    title: "Tutorials — datascience",
+    description: "Step-by-step tutorials for building Bayesian networks, inference, structure learning, causal inference, file formats, sampling, advanced models, and internal libraries with datascience.",
     canonical: "https://pgmgo.asymmetric-effort.com/#/tutorials",
   });
 
@@ -26,13 +26,13 @@ export function Tutorials() {
           This tutorial walks through creating a Bayesian network from scratch. You will create
           the classic "wet grass" model, add conditional probability distributions, validate the
           model, run an inference query, and save it to a file. By the end you will understand
-          the core workflow for using pgmgo.
+          the core workflow for using datascience.
         </p>
 
         <h3>Prerequisites</h3>
         <ul>
           <li>Go 1.21+ installed</li>
-          <li>pgmgo installed: <code>go get github.com/asymmetric-effort/pgmgo</code></li>
+          <li>datascience installed: <code>go get github.com/asymmetric-effort/datascience</code></li>
         </ul>
 
         <h3>Introduction</h3>
@@ -59,10 +59,10 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/src/factors"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
-    "github.com/asymmetric-effort/pgmgo/src/models"
-    "github.com/asymmetric-effort/pgmgo/src/readwrite"
+    "github.com/asymmetric-effort/datascience/lib/pgm/factors"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
+    "github.com/asymmetric-effort/datascience/lib/pgm/models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/readwrite"
     "os"
 )
 
@@ -250,7 +250,7 @@ Model saved to wetgrass.bif`}</code></pre>
       <section class="section" id="tutorial-2">
         <h2>Tutorial 2: Probabilistic Inference</h2>
         <p>
-          This tutorial covers the inference algorithms in pgmgo: Variable Elimination (exact),
+          This tutorial covers the inference algorithms in datascience: Variable Elimination (exact),
           Belief Propagation (exact), and Approximate Inference (sampling-based). You will learn
           how to compute posterior marginals, MAP assignments, and when to use each method.
         </p>
@@ -278,8 +278,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
 )
 
 func main() {
@@ -468,7 +468,7 @@ Approx P(Dyspnea | Smoker=yes): [~0.30 ~0.70]`}</code></pre>
 
         <h3>Introduction</h3>
         <p>
-          In practice, you often have data but no known model structure. pgmgo provides two
+          In practice, you often have data but no known model structure. datascience provides two
           families of structure learning algorithms:
         </p>
         <ul>
@@ -484,15 +484,15 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/lib/tabgo"
-    "github.com/asymmetric-effort/pgmgo/src/ci_tests"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
-    "github.com/asymmetric-effort/pgmgo/src/learning"
-    "github.com/asymmetric-effort/pgmgo/src/metrics"
-    "github.com/asymmetric-effort/pgmgo/src/sampling"
-    "github.com/asymmetric-effort/pgmgo/src/structure_score"
-    "github.com/asymmetric-effort/pgmgo/lib/graphgo"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/tabgo"
+    "github.com/asymmetric-effort/datascience/lib/pgm/ci_tests"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
+    "github.com/asymmetric-effort/datascience/lib/pgm/learning"
+    "github.com/asymmetric-effort/datascience/lib/pgm/metrics"
+    "github.com/asymmetric-effort/datascience/lib/pgm/sampling"
+    "github.com/asymmetric-effort/datascience/lib/pgm/structure_score"
+    "github.com/asymmetric-effort/datascience/lib/graphgo"
 )
 
 func main() {
@@ -659,7 +659,7 @@ func main() {
       <section class="section" id="tutorial-4">
         <h2>Tutorial 4: Causal Inference</h2>
         <p>
-          This tutorial covers causal reasoning with pgmgo. You will learn the difference between
+          This tutorial covers causal reasoning with datascience. You will learn the difference between
           observational and interventional queries, use do-calculus, compute average treatment effects,
           and use back-door adjustment.
         </p>
@@ -691,10 +691,10 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/src/factors"
-    "github.com/asymmetric-effort/pgmgo/src/identification"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
-    "github.com/asymmetric-effort/pgmgo/src/models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/factors"
+    "github.com/asymmetric-effort/datascience/lib/pgm/identification"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
+    "github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 func main() {
@@ -837,15 +837,6 @@ func main() {
           the chain), while do(B) does not -- the intervention breaks the A-&gt;B link.
         </p>
 
-        <h3>Using the CLI</h3>
-        <pre><code>{`# Same queries from the command line
-$ pgmgo do model.bif --intervention Smoking=1 --query Cancer
-Cancer	P
-0	0.350000
-1	0.650000
-
-$ pgmgo do model.bif --intervention Tar=1 --query Cancer --evidence Smoking=0`}</code></pre>
-
         <h3>What's Next</h3>
         <ul>
           <li><ScrollLink to="tutorial-5">Tutorial 5</ScrollLink>: Working with different file formats</li>
@@ -859,7 +850,7 @@ $ pgmgo do model.bif --intervention Tar=1 --query Cancer --evidence Smoking=0`}<
       <section class="section" id="tutorial-5">
         <h2>Tutorial 5: Working with File Formats</h2>
         <p>
-          pgmgo supports 10 file formats for model serialization. This tutorial covers reading,
+          datascience supports 10 file formats for model serialization. This tutorial covers reading,
           writing, converting between formats, and using the CLI for format conversion.
         </p>
 
@@ -877,7 +868,7 @@ import (
     "log"
     "os"
 
-    "github.com/asymmetric-effort/pgmgo/src/readwrite"
+    "github.com/asymmetric-effort/datascience/lib/pgm/readwrite"
 )
 
 func main() {
@@ -977,24 +968,8 @@ func main() {
     fmt.Println("Converted NET -> BIF and JSON")
 }`}</code></pre>
 
-        <h3>Step 6: CLI Commands for Format Conversion</h3>
-        <pre><code>{`# Convert BIF to XMLBIF
-$ pgmgo convert --input asia.bif --from bif --to xmlbif --output asia.xmlbif
-
-# Convert NET to BIF
-$ pgmgo convert --input model.net --from net --to bif --output model.bif
-
-# Convert XDSL to UAI (for competition submission)
-$ pgmgo convert --input model.xdsl --from xdsl --to uai --output model.uai
-
-# Validate a model after conversion
-$ pgmgo validate output.bif
-
-# Inspect a model
-$ pgmgo info output.bif`}</code></pre>
-
-        <h3>Step 7: Working with Built-in Example Models</h3>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/example_models"
+        <h3>Step 6: Working with Built-in Example Models</h3>
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/example_models"
 
 // List all 25 available models
 for _, name := range example_models.List() {
@@ -1043,7 +1018,7 @@ jsonOut.Close()`}</code></pre>
       <section class="section" id="tutorial-6">
         <h2>Tutorial 6: Sampling and Monte Carlo Methods</h2>
         <p>
-          This tutorial covers all sampling methods in pgmgo: forward sampling, rejection sampling,
+          This tutorial covers all sampling methods in datascience: forward sampling, rejection sampling,
           likelihood-weighted sampling, and Gibbs sampling. You will learn when to use each method
           and how to compare empirical distributions against exact marginals.
         </p>
@@ -1078,9 +1053,9 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/src/sampling"
-    "github.com/asymmetric-effort/pgmgo/lib/tabgo"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/sampling"
+    "github.com/asymmetric-effort/datascience/lib/tabgo"
 )
 
 func main() {
@@ -1180,7 +1155,7 @@ func main() {
     fmt.Println("Gibbs Dyspnea | Smoker=yes:", gibbsDyspnea.ValueCounts())`}</code></pre>
 
         <h3>Step 5: Compare Empirical vs. Exact Marginals</h3>
-        <pre><code>{`    import "github.com/asymmetric-effort/pgmgo/src/inference"
+        <pre><code>{`    import "github.com/asymmetric-effort/datascience/lib/pgm/inference"
 
     // Exact posterior: P(Dyspnea | Smoker=yes)
     facs, _ := bn.ToMarkovFactors()
@@ -1209,16 +1184,6 @@ func main() {
           </tbody>
         </table>
 
-        <h3>CLI Sampling</h3>
-        <pre><code>{`# Forward sampling
-$ pgmgo sample --model asia.bif --n 5000 --seed 42 --output samples.csv
-
-# Rejection sampling with evidence
-$ pgmgo sample --model asia.bif --n 500 --method rejection --evidence Smoker=1 --output rej.csv
-
-# Gibbs sampling with evidence
-$ pgmgo sample --model asia.bif --n 2000 --method gibbs --evidence Smoker=1 --output gibbs.csv`}</code></pre>
-
         <h3>What's Next</h3>
         <ul>
           <li><ScrollLink to="tutorial-3">Tutorial 3</ScrollLink>: Use sampled data for structure learning</li>
@@ -1232,7 +1197,7 @@ $ pgmgo sample --model asia.bif --n 2000 --method gibbs --evidence Smoker=1 --ou
       <section class="section" id="tutorial-7">
         <h2>Tutorial 7: Advanced Models</h2>
         <p>
-          Beyond the standard BayesianNetwork, pgmgo provides several specialized model types
+          Beyond the standard BayesianNetwork, datascience provides several specialized model types
           for different use cases. This tutorial covers Dynamic Bayesian Networks, Markov Networks,
           Naive Bayes classifiers, and Structural Equation Models.
         </p>
@@ -1249,8 +1214,8 @@ $ pgmgo sample --model asia.bif --n 2000 --method gibbs --evidence Smoker=1 --ou
           variables at time t and time t+1, allowing inference about how state evolves over time.
         </p>
         <pre><code>{`import (
-    "github.com/asymmetric-effort/pgmgo/src/models"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
+    "github.com/asymmetric-effort/datascience/lib/pgm/models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
 )
 
 // Create a 2-time-slice DBN
@@ -1284,7 +1249,7 @@ _ = dbnInf`}</code></pre>
           Markov Networks use undirected edges and factor potentials instead of directed edges
           and CPDs. They are useful when the direction of influence is unknown or symmetric.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/models"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/pgm/models"
 
 // Create a Markov Network
 mn := models.NewMarkovNetwork()
@@ -1327,7 +1292,7 @@ mn.AddFactor(factors.NewDiscreteFactor(
           parent of all feature variables, which are assumed conditionally independent given
           the class.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/models"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/pgm/models"
 
 // Create a Naive Bayes classifier
 nb := models.NewNaiveBayes()
@@ -1373,7 +1338,7 @@ fmt.Println("P(Spam | features):", result.Values().Data())`}</code></pre>
           SEMs define variables as explicit equations of their parents plus noise terms. They
           are widely used in causal inference and econometrics.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/models"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/pgm/models"
 
 // Create a Structural Equation Model
 sem := models.NewSEM()
@@ -1403,7 +1368,7 @@ sem.AddEdge("Income", "Health")
           LinearGaussianBN. Each variable is defined as a linear combination of its parents
           plus Gaussian noise.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/models"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/pgm/models"
 
 lgbn := models.NewLinearGaussianBN()
 lgbn.AddNode("X")
@@ -1439,14 +1404,14 @@ lgbn.SetCPD("Z", factors.NewLinearGaussianCPD(
       <section class="section" id="tutorial-8">
         <h2>Tutorial 8: Using the Internal Libraries</h2>
         <p>
-          pgmgo's internal libraries -- numgo, scigo, graphgo, and tabgo -- are general-purpose
+          datascience's internal libraries -- numgo, scigo, graphgo, and tabgo -- are general-purpose
           and can be used independently of the PGM layer. This tutorial shows how to use each
           for common tasks.
         </p>
 
         <h3>Prerequisites</h3>
         <ul>
-          <li>pgmgo installed: <code>go get github.com/asymmetric-effort/pgmgo</code></li>
+          <li>datascience installed: <code>go get github.com/asymmetric-effort/datascience</code></li>
         </ul>
 
         <h3>numgo: Matrix and Array Operations</h3>
@@ -1457,7 +1422,7 @@ lgbn.SetCPD("Z", factors.NewLinearGaussianCPD(
 
 import (
     "fmt"
-    "github.com/asymmetric-effort/pgmgo/lib/numgo"
+    "github.com/asymmetric-effort/datascience/lib/numgo"
 )
 
 func main() {
@@ -1522,7 +1487,7 @@ func main() {
 
 import (
     "fmt"
-    "github.com/asymmetric-effort/pgmgo/lib/scigo"
+    "github.com/asymmetric-effort/datascience/lib/scigo"
 )
 
 func main() {
@@ -1570,7 +1535,7 @@ func main() {
 
 import (
     "fmt"
-    "github.com/asymmetric-effort/pgmgo/lib/graphgo"
+    "github.com/asymmetric-effort/datascience/lib/graphgo"
 )
 
 func main() {
@@ -1634,7 +1599,7 @@ func main() {
 
 import (
     "fmt"
-    "github.com/asymmetric-effort/pgmgo/lib/tabgo"
+    "github.com/asymmetric-effort/datascience/lib/tabgo"
 )
 
 func main() {

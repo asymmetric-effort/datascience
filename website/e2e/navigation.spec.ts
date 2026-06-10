@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('home page loads', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('h1')).toContainText('pgmgo');
+  await expect(page.locator('h1')).toContainText('datascience');
 });
 
 test('docs page loads via nav', async ({ page }) => {

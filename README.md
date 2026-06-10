@@ -1,46 +1,45 @@
 <p align="center">
-  <img src="docs/img/logo.png" alt="pgmgo logo" width="150">
+  <img src="docs/img/logo.png" alt="datascience logo" width="150">
 </p>
 
-<h1 align="center">pgmgo</h1>
+<h1 align="center">datascience</h1>
 
 <p align="center">
-  <strong>Probabilistic Graphical Models in Go</strong><br>
-  A zero-dependency Go library with 100% pgmpy feature parity
+  <strong>Data Science and Machine Learning in Go</strong><br>
+  A zero-dependency Go library for probabilistic models, deep learning, numerical computing, and quantitative analysis
 </p>
 
 <p align="center">
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.26+-00ADD8.svg" alt="Go Version"></a>
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen.svg" alt="Zero Dependencies">
-  <a href="https://github.com/asymmetric-effort/pgmgo/actions"><img src="https://github.com/asymmetric-effort/pgmgo/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://github.com/asymmetric-effort/datascience/actions"><img src="https://github.com/asymmetric-effort/datascience/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
 </p>
 
 ---
 
 ## Overview
 
-pgmgo is a pure Go library for probabilistic graphical models. It provides a
-complete implementation of the algorithms and data structures found in
-[pgmpy](https://pgmpy.org), the popular Python library, ported to idiomatic Go
-with full feature parity.
+datascience is a comprehensive pure Go library for data science and machine learning.
+It provides probabilistic graphical models (full pgmpy parity), a TensorFlow-compatible
+deep learning framework, BLAS-optimized numerical computing, and quantitative finance
+tools — all with **zero third-party dependencies**.
 
-pgmgo has **zero third-party dependencies**. Every numerical, graph-theoretic,
-and tabular operation is implemented from scratch in Go within the project's own
-internal libraries. This eliminates supply-chain risk and simplifies deployment
-to a single static binary.
+Every numerical, graph-theoretic, statistical, and tabular operation is implemented
+from scratch in Go within the project's internal libraries. This eliminates
+supply-chain risk and simplifies deployment.
 
 ## Installation
 
 ```bash
-go get github.com/asymmetric-effort/pgmgo
+go get github.com/asymmetric-effort/datascience
 ```
 
 Requires Go 1.26 or later.
 
 ## Quick Start
 
-Build a Bayesian network, add CPDs, and run a variable elimination query:
+Build a Bayesian network and run inference:
 
 ```go
 package main
@@ -49,22 +48,17 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
 )
 
 func main() {
-    // Build the classic Student network (D, I, G, L, S).
     bn := example_models.Student()
-
     if err := bn.CheckModel(); err != nil {
         log.Fatalf("Model validation failed: %v", err)
     }
 
-    // Convert to Markov factors for inference.
     markovFactors, _ := bn.ToMarkovFactors()
-
-    // Query: P(G | D=Easy, I=High)
     ve := inference.NewVariableElimination(markovFactors)
     evidence := map[string]int{"D": 0, "I": 1}
     result, _ := ve.Query([]string{"G"}, evidence)
@@ -76,155 +70,127 @@ func main() {
 }
 ```
 
-## Features
+Train a neural network:
+
+```go
+package main
+
+import (
+    "github.com/asymmetric-effort/datascience/lib/numgo"
+    "github.com/asymmetric-effort/datascience/lib/tensorflow/keras"
+    "github.com/asymmetric-effort/datascience/lib/tensorflow/nn/layer"
+    "github.com/asymmetric-effort/datascience/lib/tensorflow/nn/loss"
+)
+
+func main() {
+    model := keras.NewSequential()
+    model.Add(layer.NewDense(128, "relu"))
+    model.Add(layer.NewDense(10, "softmax"))
+    model.Compile(loss.CategoricalCrossEntropy, 0.001)
+
+    X := numgo.NewNDArray([]int{100, 784}, nil) // training data
+    Y := numgo.NewNDArray([]int{100, 10}, nil)  // labels
+    model.Fit(X, Y, 10, 32) // epochs=10, batch=32
+}
+```
+
+## Libraries
+
+| Library          | Replaces           | Description                                                    |
+|------------------|--------------------|----------------------------------------------------------------|
+| **lib/numgo**    | NumPy              | N-dimensional arrays, broadcasting, linear algebra, BLAS L1/2/3 |
+| **lib/scigo**    | SciPy              | Statistics, distributions, optimization, FFT, SDE solvers, Black-Scholes, portfolio optimization |
+| **lib/tabgo**    | Pandas             | DataFrames, CSV I/O, filtering, aggregation, rolling analytics  |
+| **lib/graphgo**  | NetworkX           | Graph data structures, algorithms, d-separation, moralization   |
+| **lib/gpu**      | PyTorch/Pyro       | Compute backend abstraction (CPU fallback included)             |
+| **lib/pgm**      | pgmpy              | Probabilistic graphical models — 13 model types, 7 inference algorithms, 11 learning algorithms |
+| **lib/tensorflow**| TensorFlow/Keras  | Neural networks — Dense, Conv2D, LSTM, GRU, Attention, BatchNorm, optimizers, loss functions |
+
+## Probabilistic Graphical Models (lib/pgm)
 
 ### Models (13 types)
 
-- Bayesian Network
-- Discrete Bayesian Network
-- Markov Network
-- Discrete Markov Network
-- Dynamic Bayesian Network
-- Factor Graph
-- Cluster Graph
-- Junction Tree
-- Naive Bayes
-- Markov Chain
-- Linear Gaussian Bayesian Network
-- Functional Bayesian Network
-- Structural Equation Model (SEM)
+Bayesian Network, Discrete Bayesian Network, Markov Network, Discrete Markov Network,
+Dynamic Bayesian Network, Factor Graph, Cluster Graph, Junction Tree, Naive Bayes,
+Markov Chain, Linear Gaussian BN, Functional BN, Structural Equation Model (SEM)
 
 ### Inference (7 algorithms)
 
-- Variable Elimination
-- Belief Propagation
-- Max-Product Linear Programming (MPLP)
-- Approximate Inference
-- Causal Inference (do-calculus, backdoor/frontdoor adjustment)
-- Dynamic Bayesian Network Inference
-- MAP and MPE queries
+Variable Elimination, Belief Propagation, MPLP, Approximate Inference,
+Causal Inference (do-calculus, backdoor/frontdoor), Dynamic BN Inference, MAP/MPE queries
 
-### Learning (11 algorithms)
+### Learning (11+ algorithms)
 
-- Maximum Likelihood Estimation (MLE)
-- Bayesian Estimation
-- Expectation-Maximization (EM)
-- Linear Gaussian MLE
-- SEM Estimation
-- Hill Climb Search
-- Exhaustive Search
-- PC Algorithm
-- GES (Greedy Equivalence Search)
-- MMHC (Max-Min Hill Climbing)
-- Tree Search
-
-### Additional Learning
-
-- Expert Knowledge integration
-- Expert-in-the-Loop learning
-- LLM-assisted structure learning
-- Instrumental Variable (IV) estimation
-- Mirror Descent optimization
-- Marginal Estimation
-
-### Sampling
-
-- Forward / Bayesian Sampling
-- Gibbs Sampling
-
-### Causal Inference
-
-- do-calculus interventions
-- Average Treatment Effect (ATE)
-- Backdoor and frontdoor adjustment
-
-### Structure Scoring
-
-- BIC, BDeu, K2, and other scoring functions
-- Constraint-based and score-based structure learning
+MLE, Bayesian Estimation, EM, Linear Gaussian MLE, SEM Estimation,
+Hill Climb, Exhaustive Search, PC, GES, MMHC, Tree Search,
+Expert-in-the-Loop, LLM-assisted discovery, IV estimation, Mirror Descent
 
 ### File I/O (7 formats)
 
-- BIF (Bayesian Interchange Format)
-- XMLBIF
-- UAI
-- NET
-- XBN
-- XDSL
-- POMDPX
+BIF, XMLBIF, UAI, NET, XBN, XDSL, POMDPX
 
-## Internal Libraries
+## Deep Learning (lib/tensorflow)
 
-pgmgo includes five internal libraries that replace common third-party
-dependencies:
+### Layers
 
-| Library    | Purpose                                                        |
-|------------|----------------------------------------------------------------|
-| **numgo**  | N-dimensional array operations, broadcasting, linear algebra   |
-| **scigo**  | Scientific computing: statistics, probability distributions    |
-| **graphgo**| Graph data structures, algorithms, d-separation, moralization  |
-| **tabgo**  | Tabular data (DataFrames), CSV I/O, filtering, aggregation     |
-| **gpu**    | Compute backend abstraction (CPU fallback included)            |
+Dense, Conv2D, LSTM, GRU, Attention, BatchNorm, Dropout, Embedding, Flatten, MaxPool2D
+
+### Training
+
+Sequential model, SGD/Adam/RMSProp optimizers, MSE/CrossEntropy/Huber loss,
+callbacks, learning rate schedules, regularizers, metrics
+
+### Utilities
+
+GradientTape (automatic differentiation), Variable (trainable state),
+model save/load, dataset loading, image processing, weight initializers
+
+## Quantitative Finance (lib/scigo, lib/tabgo)
+
+- Black-Scholes pricing (European calls/puts, Greeks, implied volatility)
+- Binomial tree and Monte Carlo pricing
+- SDE solvers (Euler-Maruyama, Milstein)
+- Ito calculus (Brownian motion, GBM, Ornstein-Uhlenbeck)
+- Markowitz mean-variance portfolio optimization
+- QP solver with active-set method
+- Rolling correlation, beta, alpha, R-squared, PCA
+- Rolling Sharpe, Sortino, max drawdown, VaR, CVaR
 
 ## Project Structure
 
 ```
-pgmgo/
-  cmd/pgmgo/         CLI entry point
-  src/
-    models/           Graphical model types
-    inference/        Inference algorithms
-    learning/         Parameter and structure learning
-    sampling/         Sampling methods
-    readwrite/        File format readers and writers
-    factors/          Factor (CPD/JPD) representations
-    metrics/          Scoring and evaluation metrics
-    structure_score/  Structure learning scores
-    identification/   Causal identification
-    independencies/   Independence testing
-    utils/            Shared utilities
+datascience/
   lib/
-    numgo/            Numerical arrays
-    scigo/            Scientific computing
-    graphgo/          Graph algorithms
-    tabgo/            Tabular data
-    gpu/              Compute backend
-  examples/           Runnable example programs
-    datasets/         Built-in datasets
-  example_models/     Pre-built canonical networks
-  tests/              Cross-validation fixtures
-  website/            Project website source
-  docs/               Documentation assets
+    numgo/             Numerical arrays and BLAS
+    scigo/             Scientific computing
+    graphgo/           Graph algorithms
+    tabgo/             Tabular data and analytics
+    gpu/               Compute backend
+    pgm/               Probabilistic graphical models
+      models/            13 model types
+      inference/         7 inference algorithms
+      learning/          11+ learning algorithms
+      sampling/          Forward and Gibbs sampling
+      readwrite/         7 file format readers/writers
+      factors/           CPD/JPD representations
+      metrics/           Scoring and evaluation
+      ...
+    tensorflow/        Deep learning
+      keras/             Sequential model, training
+      nn/                Layers, loss, optimizers, activations
+      variable/          Trainable variables
+      gradtape/          Automatic differentiation
+      ...
+  examples/            Runnable example programs
+  example_models/      Pre-built canonical networks
+  tests/               Cross-validation fixtures
+  website/             Project website
 ```
-
-## Examples
-
-The [`examples/`](examples/) directory contains runnable programs demonstrating
-core features:
-
-| Example                | Description                                                  |
-|------------------------|--------------------------------------------------------------|
-| `basic_bn`             | Build a Bayesian network and run variable elimination         |
-| `structure_learning`   | Learn network structure from data with HillClimbSearch        |
-| `causal_inference`     | Observational vs. interventional queries and ATE              |
-| `sampling`             | Forward sampling and likelihood-weighted sampling             |
-| `bif_io`              | Round-trip BIF file serialization and deserialization          |
-
-Run any example with:
-
-```bash
-go run ./examples/basic_bn
-```
-
-## Datasets
-
-Built-in datasets for experimentation are available in
-[`examples/datasets/`](examples/datasets/).
 
 ## Documentation
 
-- [Project Website](website/) (local build with `npm run dev` in `website/`)
-- [GoDoc](https://pkg.go.dev/github.com/asymmetric-effort/pgmgo) (once published)
+- [Project Website](https://pgmgo.asymmetric-effort.com)
+- [GoDoc](https://pkg.go.dev/github.com/asymmetric-effort/datascience)
 - [Examples](examples/)
 
 ## Contributing
@@ -240,6 +206,6 @@ public issues for security concerns.
 
 ## License
 
-pgmgo is released under the [MIT License](LICENSE.txt).
+datascience is released under the [MIT License](LICENSE.txt).
 
 Copyright (c) 2026 Asymmetric Effort, LLC.

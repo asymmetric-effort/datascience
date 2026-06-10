@@ -4,7 +4,7 @@ package example_models
 // structure only (nodes + edges). CPDs are omitted because the full
 // parameterizations are too large to hardcode.
 
-import "github.com/asymmetric-effort/pgmgo/src/models"
+import "github.com/asymmetric-effort/datascience/lib/pgm/models"
 
 // structureOnly is a helper that builds a structure-only BayesianNetwork
 // from a list of node names and directed edges. State names are set to

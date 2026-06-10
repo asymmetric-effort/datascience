@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/asymmetric-effort/pgmgo/lib/numgo/internal/blas"
+	"github.com/asymmetric-effort/datascience/lib/numgo/internal/blas"
 )
 
 // Dot computes the dot product of two arrays.

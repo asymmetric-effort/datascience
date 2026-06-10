@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asymmetric-effort/pgmgo/example_models"
-	"github.com/asymmetric-effort/pgmgo/src/learning"
-	"github.com/asymmetric-effort/pgmgo/src/sampling"
-	"github.com/asymmetric-effort/pgmgo/src/structure_score"
+	"github.com/asymmetric-effort/datascience/example_models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/learning"
+	"github.com/asymmetric-effort/datascience/lib/pgm/sampling"
+	"github.com/asymmetric-effort/datascience/lib/pgm/structure_score"
 )
 
 func main() {

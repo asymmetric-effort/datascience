@@ -1,9 +1,9 @@
 # graphgo
 
-Package `graphgo` provides graph data structures and algorithms including directed and undirected graphs, topological sort, d-separation, clique finding, moralization, and junction tree construction. It serves as the NetworkX equivalent for pgmgo.
+Package `graphgo` provides graph data structures and algorithms including directed and undirected graphs, topological sort, d-separation, clique finding, moralization, and junction tree construction. It serves as the NetworkX equivalent for datascience.
 
 ```
-import "github.com/asymmetric-effort/pgmgo/lib/graphgo"
+import "github.com/asymmetric-effort/datascience/lib/graphgo"
 ```
 
 ## DiGraph (Directed Graph)

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/asymmetric-effort/pgmgo/lib/tabgo"
-	"github.com/asymmetric-effort/pgmgo/tests/testutil"
+	"github.com/asymmetric-effort/datascience/lib/tabgo"
+	"github.com/asymmetric-effort/datascience/tests/testutil"
 )
 
 // tolerances

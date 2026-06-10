@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/asymmetric-effort/pgmgo/lib/tabgo"
+	"github.com/asymmetric-effort/datascience/lib/tabgo"
 )
 
 // ===== Original 8 datasets =====

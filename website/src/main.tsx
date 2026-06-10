@@ -4,7 +4,7 @@ import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { Home } from "./pages/Home";
 import { Docs } from "./pages/Docs";
-import { Cli } from "./pages/Cli";
+import { Libraries } from "./pages/Cli";
 import { Api } from "./pages/Api";
 import { Tutorials } from "./pages/Tutorials";
 import "./styles.css";
@@ -17,7 +17,7 @@ function App() {
         <main>
           <Route path="/" component={Home} exact />
           <Route path="/docs" component={Docs} />
-          <Route path="/cli" component={Cli} />
+          <Route path="/libraries" component={Libraries} />
           <Route path="/api" component={Api} />
           <Route path="/tutorials" component={Tutorials} />
         </main>

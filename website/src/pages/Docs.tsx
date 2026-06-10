@@ -3,8 +3,8 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Docs() {
   useHead({
-    title: "Documentation — pgmgo",
-    description: "Comprehensive documentation for pgmgo, a zero-dependency Go library for probabilistic graphical models. Installation, architecture, packages, CLI, file formats, and more.",
+    title: "Documentation — datascience",
+    description: "Comprehensive documentation for datascience, a pure Go library for data science and machine learning. PGMs, TensorFlow, BLAS, financial modeling, and more.",
     canonical: "https://pgmgo.asymmetric-effort.com/#/docs",
   });
 
@@ -14,7 +14,7 @@ export function Docs() {
 
       <nav class="page-toc">
         <strong>On this page:</strong>{" "}
-        <ScrollLink to="overview">Overview</ScrollLink> | <ScrollLink to="installation">Installation</ScrollLink> | <ScrollLink to="getting-started">Getting Started</ScrollLink> | <ScrollLink to="architecture">Architecture</ScrollLink> | <ScrollLink to="library-packages">Library Packages</ScrollLink> | <ScrollLink to="core-packages">Core Packages</ScrollLink> | <ScrollLink to="cli-reference">CLI Reference</ScrollLink> | <ScrollLink to="file-formats">File Formats</ScrollLink> | <ScrollLink to="example-models">Example Models</ScrollLink> | <ScrollLink to="datasets">Datasets</ScrollLink> | <ScrollLink to="testing">Testing</ScrollLink> | <ScrollLink to="configuration">Configuration</ScrollLink> | <ScrollLink to="contributing">Contributing</ScrollLink>
+        <ScrollLink to="overview">Overview</ScrollLink> | <ScrollLink to="installation">Installation</ScrollLink> | <ScrollLink to="getting-started">Getting Started</ScrollLink> | <ScrollLink to="architecture">Architecture</ScrollLink> | <ScrollLink to="library-packages">Library Packages</ScrollLink> | <ScrollLink to="pgm-packages">PGM Packages</ScrollLink> | <ScrollLink to="file-formats">File Formats</ScrollLink> | <ScrollLink to="example-models">Example Models</ScrollLink> | <ScrollLink to="datasets">Datasets</ScrollLink> | <ScrollLink to="testing">Testing</ScrollLink> | <ScrollLink to="configuration">Configuration</ScrollLink> | <ScrollLink to="contributing">Contributing</ScrollLink>
       </nav>
 
       {/* ============================================================ */}
@@ -23,10 +23,9 @@ export function Docs() {
       <section class="section" id="overview">
         <h2>Overview</h2>
         <p>
-          <strong>pgmgo</strong> is a zero-dependency Go library for probabilistic graphical models (PGMs).
-          It aims for feature parity with <a href="https://pgmpy.org" target="_blank" rel="noopener noreferrer">pgmpy</a>,
-          the popular Python library, providing tools for creating, parameterizing, learning, and performing inference on
-          Bayesian networks, Markov networks, and related structures.
+          <strong>datascience</strong> is a comprehensive pure Go library for data science and machine learning.
+          It provides tools for probabilistic graphical models (PGMs), TensorFlow-compatible deep learning,
+          BLAS linear algebra, financial modeling, statistical computing, and more.
         </p>
         <p>
           All numerical primitives -- linear algebra, statistical distributions, graph algorithms, and tabular data
@@ -36,32 +35,32 @@ export function Docs() {
         </p>
         <p>
           The current release is <strong>v0.0.37</strong> with approximately 5,000 tests and 392 cross-validation
-          fixtures covering inference, learning, sampling, serialization, and cross-validation across 24 packages.
+          fixtures covering inference, learning, sampling, serialization, and cross-validation across the library.
         </p>
 
         <h3>Key Capabilities</h3>
         <ul>
-          <li><strong>13 model types</strong>: Bayesian networks, Markov networks, dynamic BNs, naive Bayes, SEMs, factor graphs, junction trees, and more</li>
-          <li><strong>7 inference algorithms</strong>: Variable Elimination, Belief Propagation, MPLP, approximate inference, causal do-calculus, DBN inference, MAP queries</li>
-          <li><strong>15+ learning algorithms</strong>: MLE, Bayesian estimation, EM, hill-climbing, PC, GES, exhaustive search, tree search, MMHC, expert-in-the-loop, and more</li>
-          <li><strong>16 conditional independence tests</strong>: Chi-squared, G-squared, Fisher-Z, Pearson, GCM, Hotelling-Lawley, and more</li>
-          <li><strong>13 structure scoring functions</strong>: BIC, AIC, BDeu, BDs, K2, log-likelihood, Gaussian, conditional Gaussian</li>
+          <li><strong>Probabilistic Graphical Models</strong>: 13 model types, 7 inference algorithms, 15+ learning algorithms, 16 CI tests, 13 scoring functions (via <code>lib/pgm</code>)</li>
+          <li><strong>TensorFlow / Deep Learning</strong>: Neural network construction, training, and inference (via <code>lib/tensorflow</code>)</li>
+          <li><strong>BLAS Linear Algebra</strong>: N-dimensional arrays, matrices, vectors, decompositions (via <code>lib/numgo</code>)</li>
+          <li><strong>Statistical Computing</strong>: Distributions, optimization, hypothesis tests, special functions (via <code>lib/scigo</code>)</li>
+          <li><strong>Graph Algorithms</strong>: Directed/undirected graphs, topological sort, d-separation, connected components (via <code>lib/graphgo</code>)</li>
+          <li><strong>Tabular Data</strong>: DataFrames, Series, CSV/Parquet/Excel I/O (via <code>lib/tabgo</code>)</li>
+          <li><strong>GPU Acceleration</strong>: Optional GPU compute backend for large-scale operations (via <code>lib/gpu</code>)</li>
           <li><strong>10 file formats</strong>: BIF, XMLBIF, NET, UAI, XDSL, PomdpX, XBN, CSV, JSON, XML</li>
           <li><strong>25 built-in example models</strong> and <strong>40 built-in datasets</strong></li>
-          <li><strong>GPU acceleration</strong> for compute-intensive operations</li>
           <li><strong>LLM integration</strong> for expert-in-the-loop structure learning</li>
-          <li><strong>Full CLI</strong> with 10 commands for model validation, inference, learning, sampling, and more</li>
         </ul>
 
         <h3>Relationship to pgmpy</h3>
         <p>
-          pgmgo is inspired by <a href="https://pgmpy.org" target="_blank" rel="noopener noreferrer">pgmpy</a> and
+          The PGM module (<code>lib/pgm</code>) is inspired by <a href="https://pgmpy.org" target="_blank" rel="noopener noreferrer">pgmpy</a> and
           follows similar API patterns where possible. If you have used pgmpy in Python, the concepts and workflows
-          in pgmgo will feel familiar. However, pgmgo is not a direct port -- it is a ground-up reimplementation
-          in Go with its own design decisions, particularly around the zero-dependency philosophy.
+          will feel familiar. However, datascience is not a direct port -- it is a ground-up reimplementation
+          in Go with its own design decisions, particularly around the near-zero-dependency philosophy.
         </p>
         <p>
-          Where pgmpy relies on numpy, scipy, networkx, and pandas, pgmgo provides its own equivalents:
+          Where pgmpy relies on numpy, scipy, networkx, and pandas, datascience provides its own equivalents:
           <code>numgo</code>, <code>scigo</code>, <code>graphgo</code>, and <code>tabgo</code>. These are general-purpose
           libraries that can be used independently of the PGM layer.
         </p>
@@ -74,31 +73,23 @@ export function Docs() {
         <h2>Installation</h2>
 
         <h3>Go Module</h3>
-        <pre><code>go get github.com/asymmetric-effort/pgmgo</code></pre>
+        <pre><code>go get github.com/asymmetric-effort/datascience</code></pre>
         <p>
           Requires <strong>Go 1.21</strong> or later. No C compiler needed, no system libraries needed.
           Works on Linux, macOS, and Windows. Cross-compilation works out of the box.
         </p>
 
-        <h3>CLI Binary</h3>
-        <pre><code>{`# Install the CLI tool
-go install github.com/asymmetric-effort/pgmgo/cmd/pgmgo@latest
-
-# Verify installation
-pgmgo --help`}</code></pre>
-
         <h3>From Source</h3>
-        <pre><code>{`git clone https://github.com/asymmetric-effort/pgmgo.git
-cd pgmgo
-go build ./cmd/pgmgo
-./pgmgo --help`}</code></pre>
+        <pre><code>{`git clone https://github.com/asymmetric-effort/datascience.git
+cd datascience
+go test ./...`}</code></pre>
 
         <h3>Verify</h3>
         <pre><code>{`# Run all tests to verify the installation
 go test ./...
 
 # Run a quick sanity check
-go test ./src/models/... -run TestBayesianNetwork -v`}</code></pre>
+go test ./lib/pgm/models/... -run TestBayesianNetwork -v`}</code></pre>
       </section>
 
       {/* ============================================================ */}
@@ -119,8 +110,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/src/factors"
-    "github.com/asymmetric-effort/pgmgo/src/models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/factors"
+    "github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 func main() {
@@ -193,8 +184,8 @@ func main() {
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
 )
 
 func main() {
@@ -239,10 +230,10 @@ func main() {
     "fmt"
     "log"
 
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/src/learning"
-    "github.com/asymmetric-effort/pgmgo/src/sampling"
-    "github.com/asymmetric-effort/pgmgo/src/structure_score"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/learning"
+    "github.com/asymmetric-effort/datascience/lib/pgm/sampling"
+    "github.com/asymmetric-effort/datascience/lib/pgm/structure_score"
 )
 
 func main() {
@@ -277,31 +268,30 @@ func main() {
         <h2>Architecture</h2>
 
         <h3>Project Layout</h3>
-        <pre><code>{`pgmgo/
-  cmd/
-    pgmgo/                 # CLI entry point (10 commands)
-  lib/                     # Internal primitive modules (zero-dep foundations)
-    numgo/                 # numpy equivalent: NDArray, Matrix, Vector
+        <pre><code>{`datascience/
+  lib/                     # All library modules
+    numgo/                 # numpy equivalent: NDArray, Matrix, Vector, BLAS
     scigo/                 # scipy equivalent: distributions, optimization, special functions
     graphgo/               # networkx equivalent: DiGraph, PDAG, graph algorithms
     tabgo/                 # pandas equivalent: DataFrame, Series, CSV/Parquet I/O
     gpu/                   # GPU compute backend for large-scale operations
-  src/                     # Core PGM library
-    base/                  # DAG, PDAG, UndirectedGraph, ADMG, MAG, SimpleCausalModel
-    models/                # 13 probabilistic model types
-    factors/               # Factor representations: TabularCPD, DiscreteFactor, etc.
-    inference/             # 7 inference algorithms (VE, BP, MPLP, Causal, etc.)
-    sampling/              # Forward, rejection, likelihood-weighted, Gibbs sampling
-    learning/              # 15+ learning algorithms (parameter + structure)
-    ci_tests/              # 16 conditional independence tests
-    structure_score/       # 13 scoring functions for structure learning
-    identification/        # Causal effect identification (back-door, front-door)
-    prediction/            # DoubleML, naive adjustment, IV regression
-    metrics/               # SHD, confusion matrices, correlation, Fisher's C
-    independencies/        # Independence assertion representations
-    readwrite/             # 10 file format readers and writers
-    config/                # Global configuration
-    utils/                 # Shared parsing, optimization, compatibility utilities
+    pgm/                   # Probabilistic Graphical Models (pgmpy-inspired)
+      base/                # DAG, PDAG, UndirectedGraph, ADMG, MAG, SimpleCausalModel
+      models/              # 13 probabilistic model types
+      factors/             # Factor representations: TabularCPD, DiscreteFactor, etc.
+      inference/           # 7 inference algorithms (VE, BP, MPLP, Causal, etc.)
+      sampling/            # Forward, rejection, likelihood-weighted, Gibbs sampling
+      learning/            # 15+ learning algorithms (parameter + structure)
+      ci_tests/            # 16 conditional independence tests
+      structure_score/     # 13 scoring functions for structure learning
+      identification/      # Causal effect identification (back-door, front-door)
+      prediction/          # DoubleML, naive adjustment, IV regression
+      metrics/             # SHD, confusion matrices, correlation, Fisher's C
+      independencies/      # Independence assertion representations
+      readwrite/           # 10 file format readers and writers
+      config/              # Global configuration
+      utils/               # Shared parsing, optimization, compatibility utilities
+    tensorflow/            # TensorFlow-compatible deep learning
   example_models/          # 25 built-in Bayesian networks
   examples/
     datasets/              # 40 built-in CSV datasets
@@ -312,34 +302,34 @@ func main() {
         <p>
           The dependency flow is strictly layered. Each layer depends only on layers below it:
         </p>
-        <pre><code>{`Layer 4: cmd/pgmgo          (CLI application)
+        <pre><code>{`Layer 3: lib/pgm, lib/tensorflow  (domain: PGMs, deep learning, etc.)
          |
-Layer 3: src/*              (PGM domain: models, inference, learning, etc.)
+Layer 2: lib/numgo, lib/scigo,    (primitives: arrays, stats, graphs, tables, GPU)
+         lib/graphgo, lib/tabgo,
+         lib/gpu
          |
-Layer 2: lib/*              (primitives: numgo, scigo, graphgo, tabgo, gpu)
-         |
-Layer 1: Go standard library (only dependency)`}</code></pre>
+Layer 1: Go standard library       (only dependency)`}</code></pre>
         <p>
           The <code>lib/</code> packages are general-purpose and can be used independently. For example,
           you could use <code>numgo</code> for matrix math or <code>graphgo</code> for graph algorithms
           without importing any PGM-specific code.
         </p>
         <p>
-          The <code>src/</code> packages build on <code>lib/</code> to implement PGM-specific functionality.
+          The <code>lib/pgm</code> packages build on the primitive libraries to implement PGM-specific functionality.
           They also depend on each other -- for example, <code>inference</code> depends on <code>factors</code>,
           and <code>learning</code> depends on <code>structure_score</code> and <code>ci_tests</code>.
         </p>
         <p>
-          The <code>cmd/pgmgo</code> CLI is a thin wrapper that wires the <code>src/</code> packages into
-          a command-line interface. It depends on everything but nothing depends on it.
+          The <code>lib/tensorflow</code> package provides TensorFlow-compatible deep learning functionality,
+          building on <code>numgo</code> for tensor operations and <code>gpu</code> for acceleration.
         </p>
 
         <h3>Design Principles</h3>
         <ul>
-          <li><strong>Zero dependencies:</strong> The entire library compiles with only the Go standard library. No cgo, no system libraries, no third-party modules.</li>
-          <li><strong>pgmpy compatibility:</strong> API patterns follow pgmpy where practical, making it easier for Python PGM practitioners to transition to Go.</li>
+          <li><strong>Near-zero dependencies:</strong> The entire library compiles with only the Go standard library. No cgo, no system libraries, no third-party modules.</li>
+          <li><strong>pgmpy compatibility:</strong> PGM API patterns follow pgmpy where practical, making it easier for Python practitioners to transition to Go.</li>
           <li><strong>Cross-validation:</strong> 392 test fixtures validate results against known-correct outputs, ensuring numerical accuracy across inference, learning, and sampling.</li>
-          <li><strong>Layered architecture:</strong> Primitive libraries (numgo, scigo, graphgo, tabgo) are reusable beyond PGMs. The PGM layer builds on these without polluting them.</li>
+          <li><strong>Layered architecture:</strong> Primitive libraries (numgo, scigo, graphgo, tabgo) are reusable beyond PGMs. Domain libraries (pgm, tensorflow) build on these without polluting them.</li>
         </ul>
       </section>
 
@@ -350,15 +340,15 @@ Layer 1: Go standard library (only dependency)`}</code></pre>
         <h2>Library Packages (lib/)</h2>
         <p>
           These packages replace common Python scientific computing libraries with pure Go implementations.
-          They are general-purpose and can be imported independently of the PGM layer.
+          They are general-purpose and can be imported independently of the PGM or deep learning layers.
         </p>
 
         <h3>numgo -- numpy equivalent</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/lib/numgo</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/numgo</code>
         </p>
         <p>
-          N-dimensional arrays, linear algebra, matrix operations, broadcasting, and element-wise arithmetic.
+          N-dimensional arrays, linear algebra, BLAS routines, matrix operations, broadcasting, and element-wise arithmetic.
         </p>
         <table>
           <thead>
@@ -370,7 +360,7 @@ Layer 1: Go standard library (only dependency)`}</code></pre>
             <tr><td><code>Vector</code></td><td>1D vector with dot product, norm, element-wise operations</td></tr>
           </tbody>
         </table>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/lib/numgo"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/numgo"
 
 // Create a matrix
 m := numgo.NewMatrix(3, 3)
@@ -397,7 +387,7 @@ norm := v1.Norm()`}</code></pre>
 
         <h3>scigo -- scipy equivalent</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/lib/scigo</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/scigo</code>
         </p>
         <p>
           Statistical distributions, optimization routines, special functions, and hypothesis tests.
@@ -413,7 +403,7 @@ norm := v1.Norm()`}</code></pre>
             <tr><td>Special Functions</td><td>Gamma function, beta function, incomplete gamma, digamma</td></tr>
           </tbody>
         </table>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/lib/scigo"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/scigo"
 
 // Normal distribution
 n := scigo.NewNormal(0, 1) // mean=0, std=1
@@ -432,7 +422,7 @@ result := scigo.Minimize(func(x float64) float64 {
 
         <h3>graphgo -- networkx equivalent</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/lib/graphgo</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/graphgo</code>
         </p>
         <p>
           Directed and undirected graphs with a full suite of graph algorithms.
@@ -451,7 +441,7 @@ result := scigo.Minimize(func(x float64) float64 {
           Algorithms: topological sort, d-separation, moral graph, triangulation, maximum cardinality search,
           clique finding, connected components, shortest paths, cycle detection.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/lib/graphgo"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/graphgo"
 
 // Create a directed graph
 g := graphgo.NewDiGraph()
@@ -474,7 +464,7 @@ neighbors := ug.Neighbors("Y")  // ["X", "Z"]`}</code></pre>
 
         <h3>tabgo -- pandas equivalent</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/lib/tabgo</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/tabgo</code>
         </p>
         <p>
           Tabular data with named columns, row filtering, groupby, and file I/O.
@@ -491,7 +481,7 @@ neighbors := ug.Neighbors("Y")  // ["X", "Z"]`}</code></pre>
         <p>
           I/O: <code>ReadCSV</code>, <code>WriteCSV</code>, <code>ReadParquet</code>, <code>WriteParquet</code>, <code>ReadXLSX</code>.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/lib/tabgo"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/tabgo"
 
 // Read CSV data
 df, err := tabgo.ReadCSV("observations.csv")
@@ -512,24 +502,38 @@ tabgo.WriteCSV(filtered, "warm_days.csv")`}</code></pre>
 
         <h3>gpu -- GPU Compute Backend</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/lib/gpu</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/gpu</code>
         </p>
         <p>
           Optional GPU acceleration for compute-intensive operations on large networks. Provides GPU-backed
-          matrix operations and factor computations that can significantly speed up inference and learning
-          on networks with many nodes.
+          matrix operations and factor computations that can significantly speed up inference, learning,
+          and deep learning training.
+        </p>
+
+        <h3>tensorflow -- Deep Learning</h3>
+        <p>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/tensorflow</code>
+        </p>
+        <p>
+          TensorFlow-compatible deep learning in pure Go. Provides neural network construction,
+          training, and inference capabilities. Builds on <code>numgo</code> for tensor operations
+          and <code>gpu</code> for hardware acceleration.
         </p>
       </section>
 
       {/* ============================================================ */}
-      {/* CORE PACKAGES */}
+      {/* PGM PACKAGES */}
       {/* ============================================================ */}
-      <section class="section" id="core-packages">
-        <h2>Core Packages (src/)</h2>
+      <section class="section" id="pgm-packages">
+        <h2>PGM Packages (lib/pgm/)</h2>
+        <p>
+          The PGM module provides a complete probabilistic graphical models toolkit, inspired by pgmpy.
+          It is one of several domain modules in the datascience library.
+        </p>
 
         <h3>base -- Foundational Graph Types</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/base</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/base</code>
         </p>
         <p>
           Provides the underlying graph structures that all model types are built on.
@@ -547,7 +551,7 @@ tabgo.WriteCSV(filtered, "warm_days.csv")`}</code></pre>
             <tr><td><code>SimpleCausalModel</code></td><td>Basic causal model with intervention semantics</td></tr>
           </tbody>
         </table>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/base"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/pgm/base"
 
 dag := base.NewDAG()
 dag.AddNode("X")
@@ -562,7 +566,7 @@ fmt.Println("X _||_ Z | Y:", separated) // true`}</code></pre>
 
         <h3>models -- Probabilistic Model Types</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/models</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/models</code>
         </p>
         <p>13 model types for different PGM use cases:</p>
         <table>
@@ -593,7 +597,7 @@ fmt.Println("X _||_ Z | Y:", separated) // true`}</code></pre>
 
         <h3>factors -- Factor Representations</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/factors</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/factors</code>
         </p>
         <table>
           <thead>
@@ -607,27 +611,10 @@ fmt.Println("X _||_ Z | Y:", separated) // true`}</code></pre>
             <tr><td><code>NoisyOR</code></td><td>Noisy-OR parameterization. Compact CPD for nodes with many binary parents.</td><td><code>NewNoisyOR()</code></td></tr>
           </tbody>
         </table>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/factors"
-
-// Create a TabularCPD: P(B | A)
-// A has 2 states, B has 2 states
-cpd := factors.NewTabularCPD(
-    "B", 2,
-    []float64{0.3, 0.7, 0.8, 0.2},  // P(b0|a0)=0.3, P(b1|a0)=0.7, P(b0|a1)=0.8, P(b1|a1)=0.2
-    []string{"A"}, []int{2},
-)
-
-// Factor operations
-f1 := factors.NewDiscreteFactor([]string{"A", "B"}, []int{2, 2}, []float64{0.1, 0.2, 0.3, 0.4})
-f2 := factors.NewDiscreteFactor([]string{"B", "C"}, []int{2, 2}, []float64{0.5, 0.6, 0.7, 0.8})
-product := f1.Product(f2)           // factor product
-marginal := product.Marginalize([]string{"B"})  // sum out B
-reduced := product.Reduce(map[string]int{"A": 0})  // fix A=0
-normalized := marginal.Normalize()  // normalize to sum to 1`}</code></pre>
 
         <h3>inference -- Inference Algorithms</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/inference</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/inference</code>
         </p>
         <table>
           <thead>
@@ -645,7 +632,7 @@ normalized := marginal.Normalize()  // normalize to sum to 1`}</code></pre>
 
         <h3>sampling -- Sampling Methods</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/sampling</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/sampling</code>
         </p>
         <table>
           <thead>
@@ -659,444 +646,25 @@ normalized := marginal.Normalize()  // normalize to sum to 1`}</code></pre>
 
         <h3>learning -- Learning Algorithms</h3>
         <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/learning</code>
+          Import: <code>github.com/asymmetric-effort/datascience/lib/pgm/learning</code>
         </p>
-        <p><strong>Parameter Learning:</strong></p>
+        <p>15+ algorithms for parameter estimation and structure learning. See the <Link to="/api">API Reference</Link> for full details.</p>
+
+        <h3>Other PGM Packages</h3>
         <table>
           <thead>
-            <tr><th>Type</th><th>Description</th></tr>
+            <tr><th>Package</th><th>Import Path</th><th>Description</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>MLE</code></td><td>Maximum Likelihood Estimation. Computes CPD parameters from complete data by counting.</td></tr>
-            <tr><td><code>BayesianEstimator</code></td><td>Bayesian parameter estimation with Dirichlet priors (BDeu). Handles small sample sizes gracefully.</td></tr>
-            <tr><td><code>EM</code></td><td>Expectation-Maximization for incomplete data (missing values).</td></tr>
-            <tr><td><code>LinearGaussianMLE</code></td><td>MLE for linear Gaussian BNs (continuous variables).</td></tr>
-            <tr><td><code>MarginalEstimator</code></td><td>Marginal likelihood estimation.</td></tr>
-            <tr><td><code>MirrorDescent</code></td><td>Mirror descent optimization for parameter learning.</td></tr>
-          </tbody>
-        </table>
-        <p><strong>Structure Learning:</strong></p>
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Category</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>HillClimbSearch</code></td><td>Score-based</td><td>Greedy hill-climbing. Iteratively adds, removes, or reverses edges to maximize a score.</td></tr>
-            <tr><td><code>PC</code></td><td>Constraint-based</td><td>PC algorithm. Uses CI tests to discover skeleton, then orients edges.</td></tr>
-            <tr><td><code>GES</code></td><td>Score-based</td><td>Greedy Equivalence Search. Searches equivalence classes of DAGs.</td></tr>
-            <tr><td><code>ExhaustiveSearch</code></td><td>Score-based</td><td>Exhaustive DAG enumeration. Optimal but only feasible for small networks (up to ~5 nodes).</td></tr>
-            <tr><td><code>TreeSearch</code></td><td>Score-based</td><td>Chow-Liu tree search. Learns tree-structured BNs.</td></tr>
-            <tr><td><code>MMHC</code></td><td>Hybrid</td><td>Max-Min Hill-Climbing. Combines CI tests (for skeleton) with scoring (for orientation).</td></tr>
-            <tr><td><code>ExpertInLoop</code></td><td>Interactive</td><td>Interactive structure learning with expert or LLM guidance.</td></tr>
-          </tbody>
-        </table>
-        <p><strong>Causal Estimation:</strong></p>
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>IVEstimator</code></td><td>Instrumental variable estimation for causal effects.</td></tr>
-            <tr><td><code>SEMEstimator</code></td><td>Structural equation model estimation.</td></tr>
-            <tr><td><code>LLMClient</code></td><td>LLM client for AI-assisted structure elicitation.</td></tr>
-          </tbody>
-        </table>
-
-        <h3>ci_tests -- Conditional Independence Tests</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/ci_tests</code>
-        </p>
-        <p>Used by constraint-based structure learning (PC, MMHC) to test whether two variables are conditionally independent given a set of conditioning variables.</p>
-        <table>
-          <thead>
-            <tr><th>Category</th><th>Tests</th><th>Data Type</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Discrete</td><td><code>ChiSquare</code>, <code>GSq</code>, <code>ModifiedChiSquare</code>, <code>PowerDivergence</code></td><td>Categorical data</td></tr>
-            <tr><td>Continuous</td><td><code>FisherZ</code>, <code>Pearsonr</code>, <code>PartialCorrelation</code></td><td>Continuous data</td></tr>
-            <tr><td>Multivariate</td><td><code>GCM</code>, <code>HotellingLawley</code>, <code>PillaiBartlett</code></td><td>Multivariate data</td></tr>
-            <tr><td>Tree-based</td><td><code>TreeBasedCI</code></td><td>Any data</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/ci_tests"
-
-// Test X _||_ Y | Z using chi-square
-statistic, pValue, independent := ci_tests.ChiSquare("X", "Y", []string{"Z"}, data, 0.05)
-fmt.Printf("Chi-square=%.3f, p=%.4f, independent=%v\\n", statistic, pValue, independent)`}</code></pre>
-
-        <h3>structure_score -- Scoring Functions</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/structure_score</code>
-        </p>
-        <p>Used by score-based structure learning (HillClimb, GES, ExhaustiveSearch) to evaluate candidate structures.</p>
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Description</th><th>When to Use</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>BIC</code></td><td>Bayesian Information Criterion. Penalizes complexity by log(N).</td><td>Default choice. Good balance of fit and parsimony.</td></tr>
-            <tr><td><code>AIC</code></td><td>Akaike Information Criterion. Less penalty than BIC.</td><td>When you prefer less penalization of complexity.</td></tr>
-            <tr><td><code>BDeu</code></td><td>Bayesian Dirichlet equivalent uniform. Bayesian score with equivalent sample size.</td><td>When you want a Bayesian prior over parameters.</td></tr>
-            <tr><td><code>BDs</code></td><td>Bayesian Dirichlet sparse. Favors sparse networks.</td><td>When you expect few edges.</td></tr>
-            <tr><td><code>K2</code></td><td>K2 score. Fast, assumes uniform prior.</td><td>Quick evaluation, large networks.</td></tr>
-            <tr><td><code>LogLikelihood</code></td><td>Raw log-likelihood (no penalty).</td><td>Comparing models of the same complexity.</td></tr>
-            <tr><td><code>Gaussian</code></td><td>Score for continuous (Gaussian) data.</td><td>Continuous variables.</td></tr>
-            <tr><td><code>ConditionalGaussian</code></td><td>Score for mixed discrete/continuous data.</td><td>Mixed data types.</td></tr>
-          </tbody>
-        </table>
-
-        <h3>identification -- Causal Effect Identification</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/identification</code>
-        </p>
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Adjustment</code></td><td>Back-door criterion. Finds adjustment sets that block all back-door paths.</td></tr>
-            <tr><td><code>Frontdoor</code></td><td>Front-door criterion. Identifies causal effects when back-door is blocked by unobserved confounders.</td></tr>
-          </tbody>
-        </table>
-
-        <h3>prediction -- Causal Prediction</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/prediction</code>
-        </p>
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>DoubleMLRegressor</code></td><td>Double/Debiased Machine Learning for causal effect estimation. Handles high-dimensional confounders.</td></tr>
-            <tr><td><code>NaiveAdjustmentRegressor</code></td><td>Naive back-door adjustment regression. Simple but requires correct adjustment set.</td></tr>
-            <tr><td><code>NaiveIVRegressor</code></td><td>Instrumental variable regression. Uses instruments to estimate causal effects with unmeasured confounders.</td></tr>
-          </tbody>
-        </table>
-
-        <h3>metrics -- Model Evaluation</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/metrics</code>
-        </p>
-        <table>
-          <thead>
-            <tr><th>Function</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>SHD</code></td><td>Structural Hamming Distance. Counts edge additions, deletions, and reversals between two DAGs.</td></tr>
-            <tr><td><code>AdjacencyConfusionMatrix</code></td><td>TP, FP, TN, FN for edge presence (ignoring direction).</td></tr>
-            <tr><td><code>OrientationConfusionMatrix</code></td><td>TP, FP, TN, FN for edge orientation (given correct adjacency).</td></tr>
-            <tr><td><code>CorrelationScore</code></td><td>Correlation-based model scoring.</td></tr>
-            <tr><td><code>FisherC</code></td><td>Fisher's C statistic for overall model fit.</td></tr>
-            <tr><td><code>LogLikelihoodScore</code></td><td>Log-likelihood of data given model.</td></tr>
-            <tr><td><code>NormalizedSHD</code></td><td>SHD normalized by the maximum possible SHD.</td></tr>
-          </tbody>
-        </table>
-
-        <h3>independencies -- Independence Assertions</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/independencies</code>
-        </p>
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>IndependenceAssertion</code></td><td>A single assertion: X _||_ Y | Z.</td></tr>
-            <tr><td><code>Independencies</code></td><td>A collection of independence assertions. Can be derived from a BN or specified manually.</td></tr>
-          </tbody>
-        </table>
-
-        <h3>readwrite -- File Format I/O</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/readwrite</code>
-        </p>
-        <p>See the <ScrollLink to="file-formats">File Formats</ScrollLink> section below for details on each format.</p>
-        <table>
-          <thead>
-            <tr><th>Functions</th><th>Format</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>ReadBIF</code> / <code>WriteBIF</code></td><td>Bayesian Interchange Format</td></tr>
-            <tr><td><code>ReadXMLBIF</code> / <code>WriteXMLBIF</code></td><td>XML-based BIF</td></tr>
-            <tr><td><code>ReadNET</code> / <code>WriteNET</code></td><td>Hugin NET</td></tr>
-            <tr><td><code>ReadUAI</code> / <code>WriteUAI</code></td><td>UAI format</td></tr>
-            <tr><td><code>ReadXDSL</code> / <code>WriteXDSL</code></td><td>GeNIe XDSL</td></tr>
-            <tr><td><code>ReadPomdpX</code></td><td>POMDP XML (read only)</td></tr>
-            <tr><td><code>ReadXBN</code></td><td>Microsoft XBN (read only)</td></tr>
-            <tr><td><code>ReadCSVModel</code> / <code>WriteCSVModel</code></td><td>CSV model serialization</td></tr>
-            <tr><td><code>ReadJSONModel</code> / <code>WriteJSONModel</code></td><td>JSON model serialization</td></tr>
-            <tr><td><code>ReadXMLModel</code> / <code>WriteXMLModel</code></td><td>XML model serialization</td></tr>
-          </tbody>
-        </table>
-
-        <h3>config -- Configuration</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/config</code>
-        </p>
-        <p>See the <ScrollLink to="configuration">Configuration</ScrollLink> section below.</p>
-
-        <h3>utils -- Shared Utilities</h3>
-        <p>
-          Import: <code>github.com/asymmetric-effort/pgmgo/src/utils</code>
-        </p>
-        <p>
-          Shared parsing, optimization, and compatibility utilities used across packages. Includes
-          helper functions for common operations like set manipulation, string parsing, and
-          numerical utilities.
-        </p>
-      </section>
-
-      {/* ============================================================ */}
-      {/* CLI REFERENCE */}
-      {/* ============================================================ */}
-      <section class="section" id="cli-reference">
-        <h2>CLI Reference</h2>
-        <p>
-          The <code>pgmgo</code> CLI provides 10 commands for working with probabilistic graphical models
-          from the command line. Install it with:
-        </p>
-        <pre><code>go install github.com/asymmetric-effort/pgmgo/cmd/pgmgo@latest</code></pre>
-        <pre><code>pgmgo [command] [options]</code></pre>
-
-        <h3>Commands Summary</h3>
-        <table>
-          <thead>
-            <tr><th>Command</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>validate</code></td><td>Validate a BIF model file</td></tr>
-            <tr><td><code>query</code></td><td>Run probabilistic inference query</td></tr>
-            <tr><td><code>map</code></td><td>Find MAP (most likely) assignment</td></tr>
-            <tr><td><code>learn</code></td><td>Learn network structure from data</td></tr>
-            <tr><td><code>fit</code></td><td>Fit parameters to data given a structure</td></tr>
-            <tr><td><code>sample</code></td><td>Generate samples from a model</td></tr>
-            <tr><td><code>info</code></td><td>Print model summary information</td></tr>
-            <tr><td><code>convert</code></td><td>Convert between model file formats</td></tr>
-            <tr><td><code>compare</code></td><td>Compare two network structures</td></tr>
-            <tr><td><code>do</code></td><td>Causal do-calculus query</td></tr>
-          </tbody>
-        </table>
-
-        <h3>validate</h3>
-        <p>Validate a BIF model file. Parses the file and checks that the model is well-formed (all CPDs are consistent with the graph structure).</p>
-        <pre><code>pgmgo validate &lt;file&gt;</code></pre>
-        <pre><code>{`$ pgmgo validate asia.bif
-model asia.bif is valid (8 nodes, 8 edges)
-
-$ pgmgo validate broken.bif
-error: model validation failed: CPD for "Lung" has inconsistent cardinality`}</code></pre>
-
-        <h3>query</h3>
-        <p>Run a probabilistic inference query. Computes posterior probabilities for query variables given observed evidence.</p>
-        <pre><code>{`pgmgo query <file> --variables V1,V2 [--evidence E1=v1,E2=v2] [--method ve|bp|approx]`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--variables</code></td><td>(required)</td><td>Comma-separated query variables</td></tr>
-            <tr><td><code>--evidence</code></td><td>(none)</td><td>Comma-separated evidence as KEY=VALUE pairs</td></tr>
-            <tr><td><code>--method</code></td><td><code>ve</code></td><td>Inference method: <code>ve</code>, <code>bp</code>, <code>approx</code> (10,000 samples)</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`# P(Dyspnea) using Variable Elimination
-$ pgmgo query asia.bif --variables Dyspnea
-
-# P(Lung, Bronc | Smoker=1) using Belief Propagation
-$ pgmgo query asia.bif --variables Lung,Bronc --evidence Smoker=1 --method bp
-
-# Approximate inference
-$ pgmgo query asia.bif --variables Dyspnea --evidence Smoker=1 --method approx`}</code></pre>
-
-        <h3>map</h3>
-        <p>Find the MAP (Maximum A Posteriori) assignment -- the most likely values for query variables given evidence.</p>
-        <pre><code>{`pgmgo map <file> --variables V1,V2 [--evidence E1=v1,E2=v2]`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--variables</code></td><td>(required)</td><td>Comma-separated query variables</td></tr>
-            <tr><td><code>--evidence</code></td><td>(none)</td><td>Comma-separated evidence as KEY=VALUE pairs</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`$ pgmgo map asia.bif --variables Lung,Bronc --evidence Smoker=1
-MAP assignment:
-  Bronc = 1
-  Lung = 0`}</code></pre>
-
-        <h3>learn</h3>
-        <p>Learn a Bayesian network structure from CSV data. Automatically fits MLE parameters after learning.</p>
-        <pre><code>{`pgmgo learn --data <csv> --method <method> --output <bif> [--score bic|bdeu|k2] [--significance 0.05]`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--data</code></td><td>(required)</td><td>Path to CSV data file</td></tr>
-            <tr><td><code>--method</code></td><td><code>hillclimb</code></td><td>Learning method: <code>hillclimb</code>, <code>pc</code>, <code>ges</code>, <code>exhaustive</code>, <code>tree</code></td></tr>
-            <tr><td><code>--score</code></td><td><code>bic</code></td><td>Scoring function: <code>bic</code>, <code>bdeu</code>, <code>k2</code></td></tr>
-            <tr><td><code>--significance</code></td><td><code>0.05</code></td><td>Significance level for constraint-based methods (PC)</td></tr>
-            <tr><td><code>--output</code></td><td>(required)</td><td>Output BIF file path</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`# Hill-climb with BIC scoring (default)
-$ pgmgo learn --data observations.csv --output learned.bif
-
-# PC algorithm with chi-square test
-$ pgmgo learn --data observations.csv --method pc --significance 0.01 --output learned_pc.bif
-
-# GES with BDeu scoring
-$ pgmgo learn --data observations.csv --method ges --score bdeu --output learned_ges.bif
-
-# Exhaustive search (small networks only)
-$ pgmgo learn --data small_data.csv --method exhaustive --output optimal.bif
-
-# Tree search (Chow-Liu)
-$ pgmgo learn --data observations.csv --method tree --output tree_model.bif`}</code></pre>
-
-        <h3>fit</h3>
-        <p>Fit parameters (CPDs) to an existing network structure using observed data.</p>
-        <pre><code>{`pgmgo fit --model <bif> --data <csv> --method <method> --output <bif>`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--model</code></td><td>(required)</td><td>Input BIF model file (provides structure)</td></tr>
-            <tr><td><code>--data</code></td><td>(required)</td><td>Path to CSV data file</td></tr>
-            <tr><td><code>--method</code></td><td><code>mle</code></td><td>Parameter learning method: <code>mle</code>, <code>bayesian</code>, <code>em</code></td></tr>
-            <tr><td><code>--output</code></td><td>(required)</td><td>Output BIF file path</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`# Maximum Likelihood Estimation
-$ pgmgo fit --model structure.bif --data train.csv --output fitted_mle.bif
-
-# Bayesian estimation with BDeu prior
-$ pgmgo fit --model structure.bif --data train.csv --method bayesian --output fitted_bayes.bif
-
-# EM for incomplete data
-$ pgmgo fit --model structure.bif --data incomplete.csv --method em --output fitted_em.bif`}</code></pre>
-
-        <h3>sample</h3>
-        <p>Generate samples from a Bayesian network model.</p>
-        <pre><code>{`pgmgo sample --model <bif> --output <csv> [--n 100] [--method forward|rejection|gibbs] [--evidence E1=v1] [--seed 42]`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--model</code></td><td>(required)</td><td>Input BIF model file</td></tr>
-            <tr><td><code>--n</code></td><td><code>100</code></td><td>Number of samples to generate</td></tr>
-            <tr><td><code>--output</code></td><td>(required)</td><td>Output CSV file path</td></tr>
-            <tr><td><code>--method</code></td><td><code>forward</code></td><td>Sampling method: <code>forward</code>, <code>rejection</code>, <code>gibbs</code></td></tr>
-            <tr><td><code>--evidence</code></td><td>(none)</td><td>Evidence for rejection/gibbs sampling</td></tr>
-            <tr><td><code>--seed</code></td><td><code>0</code></td><td>Random seed (0 = non-deterministic)</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`# Forward sampling (100 samples)
-$ pgmgo sample --model asia.bif --output samples.csv
-
-# 5000 samples with fixed seed
-$ pgmgo sample --model asia.bif --n 5000 --seed 42 --output samples.csv
-
-# Rejection sampling with evidence
-$ pgmgo sample --model asia.bif --n 500 --method rejection --evidence Smoker=1 --output smoker_samples.csv
-
-# Gibbs sampling
-$ pgmgo sample --model asia.bif --n 1000 --method gibbs --evidence Smoker=1 --output gibbs_samples.csv`}</code></pre>
-
-        <h3>info</h3>
-        <p>Print a summary of a BIF model.</p>
-        <pre><code>pgmgo info &lt;file&gt;</code></pre>
-        <pre><code>{`$ pgmgo info asia.bif
-Model: asia.bif
-Nodes: 8
-Edges: 8
-
-Node list:
-  VisitAsia (states: no, yes)
-  Tuberculosis (states: no, yes)
-  Smoker (states: no, yes)
-  ...
-
-Edge list:
-  VisitAsia -> Tuberculosis
-  Smoker -> Lung
-  ...
-
-CPD summary:
-  VisitAsia: 2 states, no parents
-  Tuberculosis: 2 states, parents: VisitAsia
-  ...`}</code></pre>
-
-        <h3>convert</h3>
-        <p>Convert a model between supported file formats.</p>
-        <pre><code>{`pgmgo convert --input <file> --from <format> --to <format> --output <file>`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--input</code></td><td>Input file path</td></tr>
-            <tr><td><code>--from</code></td><td>Input format: <code>bif</code>, <code>xmlbif</code>, <code>net</code>, <code>uai</code>, <code>xdsl</code></td></tr>
-            <tr><td><code>--to</code></td><td>Output format: <code>bif</code>, <code>xmlbif</code>, <code>net</code>, <code>uai</code>, <code>xdsl</code></td></tr>
-            <tr><td><code>--output</code></td><td>Output file path</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`# BIF to XMLBIF
-$ pgmgo convert --input asia.bif --from bif --to xmlbif --output asia.xmlbif
-
-# NET to UAI
-$ pgmgo convert --input model.net --from net --to uai --output model.uai
-
-# XDSL to BIF
-$ pgmgo convert --input model.xdsl --from xdsl --to bif --output model.bif`}</code></pre>
-
-        <h3>compare</h3>
-        <p>Compare two network structures using standard metrics.</p>
-        <pre><code>{`pgmgo compare --true <bif> --estimated <bif>`}</code></pre>
-        <pre><code>{`$ pgmgo compare --true ground_truth.bif --estimated learned.bif
-Structural Hamming Distance (SHD): 3
-
-Adjacency confusion matrix:
-  TP=6  FP=1  TN=15  FN=2
-
-Orientation confusion matrix:
-  TP=5  FP=2  TN=14  FN=3`}</code></pre>
-
-        <h3>do</h3>
-        <p>Perform a causal do-calculus query. Computes P(Y | do(X=x)).</p>
-        <pre><code>{`pgmgo do <file> --intervention X=v --query Y [--evidence E1=v1]`}</code></pre>
-        <table>
-          <thead>
-            <tr><th>Flag</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>--intervention</code></td><td>Intervention variable(s) as KEY=VALUE (comma-separated)</td></tr>
-            <tr><td><code>--query</code></td><td>Query variable</td></tr>
-            <tr><td><code>--evidence</code></td><td>Optional observational evidence</td></tr>
-          </tbody>
-        </table>
-        <pre><code>{`# P(Dyspnea | do(Smoker=1))
-$ pgmgo do asia.bif --intervention Smoker=1 --query Dyspnea
-Dyspnea	P
-0	0.304000
-1	0.696000
-
-# With additional evidence
-$ pgmgo do asia.bif --intervention Smoker=1 --query Lung --evidence VisitAsia=0`}</code></pre>
-
-        <h3>Exit Codes</h3>
-        <table>
-          <thead>
-            <tr><th>Code</th><th>Meaning</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>0</code></td><td>Success</td></tr>
-            <tr><td><code>1</code></td><td>Runtime error (inference failure, invalid model, etc.)</td></tr>
-            <tr><td><code>2</code></td><td>Invalid input (missing arguments, file not found, bad flags)</td></tr>
+            <tr><td><code>ci_tests</code></td><td><code>lib/pgm/ci_tests</code></td><td>16 conditional independence tests (ChiSquare, FisherZ, GCM, etc.)</td></tr>
+            <tr><td><code>structure_score</code></td><td><code>lib/pgm/structure_score</code></td><td>13 scoring functions (BIC, AIC, BDeu, K2, etc.)</td></tr>
+            <tr><td><code>identification</code></td><td><code>lib/pgm/identification</code></td><td>Causal effect identification (back-door, front-door)</td></tr>
+            <tr><td><code>prediction</code></td><td><code>lib/pgm/prediction</code></td><td>DoubleML, naive adjustment, IV regression</td></tr>
+            <tr><td><code>metrics</code></td><td><code>lib/pgm/metrics</code></td><td>SHD, confusion matrices, Fisher's C, log-likelihood</td></tr>
+            <tr><td><code>independencies</code></td><td><code>lib/pgm/independencies</code></td><td>Independence assertion representations</td></tr>
+            <tr><td><code>readwrite</code></td><td><code>lib/pgm/readwrite</code></td><td>10 file format readers and writers</td></tr>
+            <tr><td><code>config</code></td><td><code>lib/pgm/config</code></td><td>Global PGM configuration</td></tr>
+            <tr><td><code>utils</code></td><td><code>lib/pgm/utils</code></td><td>Shared utilities</td></tr>
           </tbody>
         </table>
       </section>
@@ -1107,7 +675,7 @@ $ pgmgo do asia.bif --intervention Smoker=1 --query Lung --evidence VisitAsia=0`
       <section class="section" id="file-formats">
         <h2>File Formats</h2>
         <p>
-          pgmgo supports 10 file formats for reading and writing probabilistic graphical models.
+          datascience supports 10 file formats for reading and writing probabilistic graphical models.
           All formats are accessed through the <code>readwrite</code> package.
         </p>
         <table>
@@ -1172,7 +740,7 @@ probability ( Tuberculosis | VisitAsia ) {
         <h3>Reading and Writing</h3>
         <pre><code>{`import (
     "os"
-    "github.com/asymmetric-effort/pgmgo/src/readwrite"
+    "github.com/asymmetric-effort/datascience/lib/pgm/readwrite"
 )
 
 // Read BIF
@@ -1201,7 +769,7 @@ xmlbifFile.Close()`}</code></pre>
       <section class="section" id="example-models">
         <h2>Example Models</h2>
         <p>
-          pgmgo ships with 25 built-in Bayesian networks accessible via the <code>example_models</code> package.
+          datascience ships with 25 built-in Bayesian networks accessible via the <code>example_models</code> package.
           13 models include full CPDs (conditional probability distributions); 12 are structure-only for use in
           learning and benchmarking.
         </p>
@@ -1250,7 +818,7 @@ xmlbifFile.Close()`}</code></pre>
         </table>
 
         <h3>Usage</h3>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/example_models"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/example_models"
 
 // List all available models
 names := example_models.List()
@@ -1278,7 +846,7 @@ fmt.Println(result.Values().Data())`}</code></pre>
       <section class="section" id="datasets">
         <h2>Datasets</h2>
         <p>
-          pgmgo includes 40 built-in datasets accessible via the <code>examples/datasets</code> package.
+          datascience includes 40 built-in datasets accessible via the <code>examples/datasets</code> package.
           These datasets are embedded in the binary using Go's <code>embed</code> package, so they are
           always available without external file dependencies.
         </p>
@@ -1351,7 +919,7 @@ fmt.Println(result.Values().Data())`}</code></pre>
         </table>
 
         <h3>Usage</h3>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/examples/datasets"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/examples/datasets"
 
 // List all available datasets
 names := datasets.List()
@@ -1375,8 +943,8 @@ bn, _ := hc.Estimate()`}</code></pre>
       <section class="section" id="testing">
         <h2>Testing</h2>
         <p>
-          pgmgo has approximately 5,000 tests and 392 cross-validation fixtures spanning unit tests,
-          integration tests, and cross-validation tests across 24 packages.
+          datascience has approximately 5,000 tests and 392 cross-validation fixtures spanning unit tests,
+          integration tests, and cross-validation tests across the library.
         </p>
 
         <h3>Running Tests</h3>
@@ -1384,22 +952,22 @@ bn, _ := hc.Estimate()`}</code></pre>
 go test ./...
 
 # Run tests for a specific package
-go test ./src/inference/...
+go test ./lib/pgm/inference/...
 
 # Run with verbose output
-go test -v ./src/models/...
+go test -v ./lib/pgm/models/...
 
 # Run with race detector
 go test -race ./...
 
 # Run a specific test function
-go test -run TestVariableElimination ./src/inference/...
+go test -run TestVariableElimination ./lib/pgm/inference/...
 
 # Run cross-validation tests only
 go test -run CrossVal ./...
 
 # Run benchmarks
-go test -bench=. ./src/inference/...`}</code></pre>
+go test -bench=. ./lib/pgm/inference/...`}</code></pre>
 
         <h3>Cross-Validation System</h3>
         <p>
@@ -1408,15 +976,15 @@ go test -bench=. ./src/inference/...`}</code></pre>
           outputs against pre-computed reference values. Examples:
         </p>
         <ul>
-          <li><code>src/models/crossval_dsep_test.go</code> -- validates d-separation queries</li>
-          <li><code>src/inference/crossval_causal_test.go</code> -- validates causal inference results</li>
-          <li><code>src/inference/crossval_ve_test.go</code> -- validates Variable Elimination posteriors</li>
-          <li><code>src/learning/crossval_hillclimb_test.go</code> -- validates structure learning output</li>
-          <li><code>src/sampling/crossval_forward_test.go</code> -- validates sampling distributions</li>
+          <li><code>lib/pgm/models/crossval_dsep_test.go</code> -- validates d-separation queries</li>
+          <li><code>lib/pgm/inference/crossval_causal_test.go</code> -- validates causal inference results</li>
+          <li><code>lib/pgm/inference/crossval_ve_test.go</code> -- validates Variable Elimination posteriors</li>
+          <li><code>lib/pgm/learning/crossval_hillclimb_test.go</code> -- validates structure learning output</li>
+          <li><code>lib/pgm/sampling/crossval_forward_test.go</code> -- validates sampling distributions</li>
         </ul>
         <p>
           Cross-validation fixtures are generated by running the equivalent pgmpy code in Python and
-          storing the results. This ensures pgmgo produces the same numerical outputs as the reference
+          storing the results. This ensures datascience produces the same numerical outputs as the reference
           implementation.
         </p>
 
@@ -1458,9 +1026,9 @@ go test -bench=. ./src/inference/...`}</code></pre>
         <h2>Configuration</h2>
         <p>
           The <code>config</code> package provides global configuration options that control
-          default behavior across pgmgo.
+          default behavior across the PGM module.
         </p>
-        <pre><code>{`import "github.com/asymmetric-effort/pgmgo/src/config"
+        <pre><code>{`import "github.com/asymmetric-effort/datascience/lib/pgm/config"
 
 // Get the global config
 cfg := config.Global()
@@ -1483,7 +1051,7 @@ cfg := config.Global()
         <h2>Contributing</h2>
         <p>
           Contributions are welcome. See the full{" "}
-          <a href="https://github.com/asymmetric-effort/pgmgo/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/asymmetric-effort/datascience/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">
             CONTRIBUTING.md
           </a>{" "}
           for details.
@@ -1501,7 +1069,7 @@ cfg := config.Global()
 
         <h3>Guidelines</h3>
         <ul>
-          <li><strong>Zero dependencies:</strong> Do not add third-party modules. All functionality must be implemented in pure Go using only the standard library.</li>
+          <li><strong>Near-zero dependencies:</strong> Do not add third-party modules. All functionality must be implemented in pure Go using only the standard library.</li>
           <li><strong>Tests required:</strong> All new functionality must include unit tests. Cross-validation tests against pgmpy are strongly encouraged.</li>
           <li><strong>Backward compatibility:</strong> Public API changes require discussion in an issue before implementation.</li>
           <li><strong>Documentation:</strong> Exported types and functions must have godoc comments.</li>

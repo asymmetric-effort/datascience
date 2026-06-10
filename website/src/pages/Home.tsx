@@ -2,12 +2,12 @@ import { createElement, useHead, Link } from "@asymmetric-effort/specifyjs";
 
 export function Home() {
   useHead({
-    title: "pgmgo — Probabilistic Graphical Models in Go",
-    description: "A zero-dependency Go library for probabilistic graphical models, similar to pgmpy. Bayesian networks, Markov networks, causal inference, structure learning, and more.",
+    title: "datascience — Data Science and Machine Learning in Go",
+    description: "A comprehensive pure Go library for data science and machine learning. PGMs, TensorFlow/deep learning, BLAS, financial modeling, and more.",
     canonical: "https://pgmgo.asymmetric-effort.com/",
     og: {
-      title: "pgmgo — Probabilistic Graphical Models in Go",
-      description: "A zero-dependency Go library for probabilistic graphical models, similar to pgmpy.",
+      title: "datascience — Data Science and Machine Learning in Go",
+      description: "A comprehensive pure Go library for data science and machine learning.",
       url: "https://pgmgo.asymmetric-effort.com/",
     },
   });
@@ -15,35 +15,36 @@ export function Home() {
   return (
     <div class="page">
       <section class="hero">
-        <img src="/docs/img/logo.png" alt="pgmgo logo" class="hero-logo" />
-        <h1>pgmgo</h1>
-        <p class="hero-subtitle">Probabilistic Graphical Models in Go</p>
+        <img src="/docs/img/logo.png" alt="datascience logo" class="hero-logo" />
+        <h1>datascience</h1>
+        <p class="hero-subtitle">Data Science and Machine Learning in Go</p>
         <p class="hero-description">
-          A zero-dependency Go library for Bayesian networks, Markov networks, causal inference,
-          structure learning, and probabilistic reasoning. Inspired by pgmpy, built entirely in Go.
+          A comprehensive pure Go library for probabilistic graphical models, TensorFlow-compatible
+          deep learning, BLAS linear algebra, financial modeling, and more. Built entirely in Go
+          with near-zero dependencies.
         </p>
         <div class="badges">
           <span class="badge">v0.0.37</span>
-          <span class="badge">Zero Dependencies</span>
+          <span class="badge">Near-Zero Dependencies</span>
           <span class="badge">Go 1.21+</span>
           <span class="badge">MIT License</span>
           <span class="badge">~5,000 Tests</span>
           <span class="badge">392 Cross-Validation Fixtures</span>
-          <span class="badge">24 Packages</span>
-          <span class="badge">10 I/O Formats</span>
-          <span class="badge">25 Example Models</span>
+          <span class="badge">PGMs</span>
+          <span class="badge">TensorFlow / Deep Learning</span>
+          <span class="badge">BLAS</span>
+          <span class="badge">Financial Modeling</span>
           <span class="badge">40 Built-in Datasets</span>
-          <span class="badge">pgmpy-Inspired</span>
         </div>
         <div class="hero-actions">
           <Link to="/docs" class="btn btn-primary">Get Started</Link>
-          <a href="https://github.com/asymmetric-effort/pgmgo" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">GitHub</a>
+          <a href="https://github.com/asymmetric-effort/datascience" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">GitHub</a>
         </div>
       </section>
 
       <section class="section">
         <h2>Installation</h2>
-        <pre><code>go get github.com/asymmetric-effort/pgmgo</code></pre>
+        <pre><code>go get github.com/asymmetric-effort/datascience</code></pre>
         <p>Requires Go 1.21 or later. No C dependencies, no cgo, no third-party modules.</p>
       </section>
 
@@ -53,10 +54,10 @@ export function Home() {
 
 import (
     "fmt"
-    "github.com/asymmetric-effort/pgmgo/example_models"
-    "github.com/asymmetric-effort/pgmgo/src/factors"
-    "github.com/asymmetric-effort/pgmgo/src/inference"
-    "github.com/asymmetric-effort/pgmgo/src/models"
+    "github.com/asymmetric-effort/datascience/example_models"
+    "github.com/asymmetric-effort/datascience/lib/pgm/factors"
+    "github.com/asymmetric-effort/datascience/lib/pgm/inference"
+    "github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 func main() {
@@ -97,40 +98,36 @@ func main() {
         <h2>Features</h2>
         <div class="features-grid">
           <div class="feature-card">
-            <h3>13 Model Types</h3>
-            <p>BayesianNetwork, MarkovNetwork, DynamicBN, NaiveBayes, SEM, FactorGraph, JunctionTree, ClusterGraph, LinearGaussianBN, FunctionalBN, MarkovChain, DiscreteBN, DiscreteMarkovNetwork.</p>
+            <h3>Probabilistic Graphical Models</h3>
+            <p>13 model types including BayesianNetwork, MarkovNetwork, DynamicBN, NaiveBayes, SEM, FactorGraph, JunctionTree, and more. 7 inference algorithms, 15+ learning algorithms.</p>
           </div>
           <div class="feature-card">
-            <h3>7 Inference Algorithms</h3>
-            <p>Variable Elimination, Belief Propagation, MPLP, Approximate Inference, Causal Inference (do-calculus), DBN Inference, and MAP queries.</p>
+            <h3>TensorFlow / Deep Learning</h3>
+            <p>TensorFlow-compatible deep learning via the <code>lib/tensorflow</code> package. Neural network construction, training, and inference in pure Go.</p>
           </div>
           <div class="feature-card">
-            <h3>15+ Learning Algorithms</h3>
-            <p>MLE, BayesianEstimator, EM, HillClimb, PC, GES, ExhaustiveSearch, TreeSearch, MMHC, Expert-in-the-Loop, IV Estimator, SEM Estimator, Mirror Descent, LinearGaussianMLE, MarginalEstimator, and LLM-assisted learning.</p>
+            <h3>BLAS Linear Algebra</h3>
+            <p>High-performance BLAS routines for matrix multiplication, decomposition, eigenvalue computation, and other linear algebra operations via <code>lib/numgo</code>.</p>
           </div>
           <div class="feature-card">
-            <h3>16 CI Tests</h3>
-            <p>ChiSquare, G-squared, FisherZ, Pearsonr, GCM, Hotelling-Lawley, PillaiBartlett, and more across discrete, continuous, multivariate, and tree-based categories.</p>
+            <h3>Financial Modeling</h3>
+            <p>Tools for quantitative finance including time series analysis, risk modeling, portfolio optimization, and statistical forecasting.</p>
           </div>
           <div class="feature-card">
-            <h3>13 Scoring Functions</h3>
-            <p>BIC, AIC, BDeu, BDs, K2, Log-Likelihood, Gaussian scores, and Conditional Gaussian scores for structure learning.</p>
+            <h3>Statistical Computing</h3>
+            <p>Comprehensive statistical distributions, hypothesis tests, optimization routines, and special functions via <code>lib/scigo</code> (scipy equivalent).</p>
           </div>
           <div class="feature-card">
-            <h3>10 I/O Formats</h3>
-            <p>BIF, XMLBIF, NET, UAI, XDSL, PomdpX, XBN, CSV, JSON, XML model serialization with full read/write support.</p>
+            <h3>Graph Algorithms</h3>
+            <p>Directed and undirected graphs with topological sort, d-separation, connected components, shortest paths, and more via <code>lib/graphgo</code> (networkx equivalent).</p>
           </div>
           <div class="feature-card">
-            <h3>25 Example Models</h3>
-            <p>Built-in models including Asia, Alarm, Cancer, Student, Sachs, Insurance, Hailfinder, Hepar2, Pigs, and more. 13 with full CPDs, 12 structure-only.</p>
-          </div>
-          <div class="feature-card">
-            <h3>40 Built-in Datasets</h3>
-            <p>Ready-to-use CSV datasets for structure learning, parameter estimation, and benchmarking. Includes BN-specific, classic ML, and UCI repository datasets.</p>
+            <h3>Tabular Data</h3>
+            <p>DataFrames, Series, CSV/Parquet/Excel I/O, filtering, groupby, and merge operations via <code>lib/tabgo</code> (pandas equivalent).</p>
           </div>
           <div class="feature-card">
             <h3>GPU Compute Backend</h3>
-            <p>Optional GPU acceleration via the <code>lib/gpu</code> package for compute-intensive operations on large networks.</p>
+            <p>Optional GPU acceleration via the <code>lib/gpu</code> package for compute-intensive operations on large networks and deep learning models.</p>
           </div>
           <div class="feature-card">
             <h3>Causal Inference</h3>
@@ -141,24 +138,32 @@ func main() {
             <p>Expert-in-the-loop structure learning with LLM client support for AI-assisted model construction and knowledge elicitation.</p>
           </div>
           <div class="feature-card">
-            <h3>Zero Dependencies</h3>
+            <h3>40 Built-in Datasets</h3>
+            <p>Ready-to-use CSV datasets for structure learning, parameter estimation, benchmarking, and general machine learning tasks.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Near-Zero Dependencies</h3>
             <p>Built entirely in Go with custom implementations of numpy (numgo), scipy (scigo), networkx (graphgo), and pandas (tabgo). No cgo, no external libraries.</p>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <h2>Why pgmgo?</h2>
+        <h2>Why datascience?</h2>
         <p>
-          pgmgo brings the power of probabilistic graphical models to the Go ecosystem. If you have used
-          pgmpy in Python, pgmgo provides a familiar API with the performance and deployment benefits of Go.
-          The zero-dependency design means you can build and deploy PGM applications without managing
-          native library installations, Python environments, or container images with scientific computing stacks.
+          datascience brings comprehensive data science and machine learning capabilities to the Go ecosystem.
+          Whether you need probabilistic graphical models (inspired by pgmpy), deep learning (TensorFlow-compatible),
+          BLAS linear algebra, or financial modeling -- this library provides a unified, pure Go solution.
         </p>
         <p>
           Every numerical primitive -- linear algebra, statistical distributions, graph algorithms, tabular data
           processing -- is implemented from scratch in pure Go. This means <code>go build</code> just works,
           cross-compilation just works, and static binaries just work.
+        </p>
+        <p>
+          The layered architecture means you can use individual packages independently.
+          Need just matrix math? Import <code>lib/numgo</code>. Just graphs? Import <code>lib/graphgo</code>.
+          Just PGMs? Import <code>lib/pgm</code>. Just deep learning? Import <code>lib/tensorflow</code>.
         </p>
       </section>
     </div>

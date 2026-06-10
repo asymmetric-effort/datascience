@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in pgmgo, please report it responsibly.
+If you discover a security vulnerability in datascience, please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
@@ -27,5 +27,5 @@ plan within 30 days.
 
 ## Scope
 
-This policy applies to the pgmgo codebase and its first-party components. Third-party
+This policy applies to the datascience codebase and its first-party components. Third-party
 dependencies (if any) are subject to their own security policies.

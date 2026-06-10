@@ -7,8 +7,8 @@ package example_models
 import (
 	"log"
 
-	"github.com/asymmetric-effort/pgmgo/src/factors"
-	"github.com/asymmetric-effort/pgmgo/src/models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/factors"
+	"github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 // mustCPD is a helper that panics on error (used only in factory functions

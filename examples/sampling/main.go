@@ -8,9 +8,9 @@ import (
 	"log"
 	"math"
 
-	"github.com/asymmetric-effort/pgmgo/example_models"
-	"github.com/asymmetric-effort/pgmgo/src/inference"
-	"github.com/asymmetric-effort/pgmgo/src/sampling"
+	"github.com/asymmetric-effort/datascience/example_models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/inference"
+	"github.com/asymmetric-effort/datascience/lib/pgm/sampling"
 )
 
 func main() {

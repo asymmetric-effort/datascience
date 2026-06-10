@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/asymmetric-effort/pgmgo/src/models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 // modelFactory maps lowercase model names to their factory functions.

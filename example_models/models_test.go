@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/asymmetric-effort/pgmgo/src/models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 func TestStudentCheckModel(t *testing.T) {

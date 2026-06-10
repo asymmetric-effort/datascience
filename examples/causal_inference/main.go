@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asymmetric-effort/pgmgo/src/factors"
-	"github.com/asymmetric-effort/pgmgo/src/inference"
-	"github.com/asymmetric-effort/pgmgo/src/models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/factors"
+	"github.com/asymmetric-effort/datascience/lib/pgm/inference"
+	"github.com/asymmetric-effort/datascience/lib/pgm/models"
 )
 
 // buildConfoundedNetwork creates a simple network with confounding:

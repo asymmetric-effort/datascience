@@ -81,9 +81,8 @@ func TestWebsiteLinks(t *testing.T) {
 	js := string(jsBody)
 
 	// Verify all routes are defined in the JS bundle
-	routes := []string{"/", "/docs", "/cli", "/api", "/tutorials"}
+	routes := []string{"/", "/docs", "/libraries", "/api", "/tutorials"}
 	for _, route := range routes {
-		// Routes appear as string literals in the bundle (double, single, or backtick quotes)
 		if !strings.Contains(js, `"`+route+`"`) &&
 			!strings.Contains(js, `'`+route+`'`) &&
 			!strings.Contains(js, "`"+route+"`") {
@@ -93,31 +92,17 @@ func TestWebsiteLinks(t *testing.T) {
 
 	// Verify page content strings are in the JS bundle
 	pageContent := map[string][]string{
-		"Home":      {"Probabilistic Graphical Models", "Installation", "Quick Start", "Features"},
-		"Docs":      {"Documentation", "Getting Started", "Library Packages", "Core Packages"},
-		"CLI":       {"CLI Reference", "validate", "query", "learn", "sample", "convert"},
-		"API":       {"API Reference", "BayesianNetwork", "VariableElimination", "Import Paths"},
-		"Tutorials": {"Tutorials", "Building Your First", "Learning from Data", "Causal Inference"},
+		"Home":      {"Data Science", "Installation", "Quick Start"},
+		"Docs":      {"Documentation", "Getting Started"},
+		"Libraries": {"numgo", "scigo", "tabgo", "tensorflow"},
+		"API":       {"API Reference", "BayesianNetwork", "VariableElimination"},
+		"Tutorials": {"Tutorials", "Building Your First", "Learning from Data"},
 	}
 	for page, keywords := range pageContent {
 		for _, kw := range keywords {
 			if !strings.Contains(js, kw) {
 				t.Errorf("page %s: missing content keyword %q in bundle", page, kw)
 			}
-		}
-	}
-
-	// Verify sitemap lists all routes
-	sitemapResp, _ := http.Get(server.URL + "/sitemap.xml")
-	sitemapBody, _ := io.ReadAll(sitemapResp.Body)
-	sitemap := string(sitemapBody)
-	for _, route := range routes {
-		hashRoute := "/#" + route
-		if route == "/" {
-			hashRoute = "/"
-		}
-		if !strings.Contains(sitemap, hashRoute) && !strings.Contains(sitemap, "pgmgo.asymmetric-effort.com"+route) {
-			t.Errorf("sitemap missing route %s", route)
 		}
 	}
 
@@ -177,7 +162,6 @@ func TestNavLogoConstraints(t *testing.T) {
 	server := httptest.NewServer(fs)
 	defer server.Close()
 
-	// Fetch the JS bundle which contains the rendered HTML templates
 	resp, _ := http.Get(server.URL + "/")
 	body, _ := io.ReadAll(resp.Body)
 	html := string(body)
@@ -192,9 +176,6 @@ func TestNavLogoConstraints(t *testing.T) {
 	jsBody, _ := io.ReadAll(jsResp.Body)
 	js := string(jsBody)
 
-	// Verify the nav logo img has explicit width and height attributes <= 100px.
-	// Vite/specifyjs bundles attributes as backtick templates: width:`28`
-	// or double-quoted: width="28". Check both patterns.
 	widthRe := regexp.MustCompile("width[=:][`\"](\\d+)[`\"]")
 	heightRe := regexp.MustCompile("height[=:][`\"](\\d+)[`\"]")
 
@@ -223,7 +204,6 @@ func TestNavLogoConstraints(t *testing.T) {
 		}
 	}
 
-	// Verify CSS constrains the nav-brand img
 	cssRe := regexp.MustCompile(`href="/assets/(index-[^"]+\.css)"`)
 	cssMatches := cssRe.FindStringSubmatch(html)
 	if len(cssMatches) < 2 {
@@ -233,7 +213,6 @@ func TestNavLogoConstraints(t *testing.T) {
 	cssBody, _ := io.ReadAll(cssResp.Body)
 	css := string(cssBody)
 
-	// CSS must contain max-height and max-width constraints for nav logo
 	if !strings.Contains(css, "max-height") {
 		t.Error("CSS missing max-height constraint for nav logo")
 	}

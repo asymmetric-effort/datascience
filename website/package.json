@@ -1,7 +1,7 @@
 {
-  "name": "pgmgo-website",
-  "version": "0.0.45",
-  "description": "pgmgo project website",
+  "name": "datascience-website",
+  "version": "0.1.0",
+  "description": "datascience project website",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/asymmetric-effort/pgmgo/lib/numgo"
-	"github.com/asymmetric-effort/pgmgo/tests/testutil"
+	"github.com/asymmetric-effort/datascience/lib/numgo"
+	"github.com/asymmetric-effort/datascience/tests/testutil"
 )
 
 // tolerances

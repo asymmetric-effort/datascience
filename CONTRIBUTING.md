@@ -1,6 +1,6 @@
-# Contributing to pgmgo
+# Contributing to datascience
 
-Thank you for your interest in contributing to pgmgo.
+Thank you for your interest in contributing to datascience.
 
 ## Getting Started
 
@@ -38,7 +38,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ## Testing
 
-pgmgo uses Python + pgmpy as a reference oracle for cross-validation testing.
+datascience uses Python + pgmpy as a reference oracle for cross-validation testing.
 
 ```bash
 make test-unit          # Run unit tests
@@ -70,7 +70,7 @@ To regenerate: `make generate-fixtures` (requires Python 3.12+ with pgmpy).
 
 ## Dependencies
 
-pgmgo maintains a near-zero third-party dependency policy to minimize supply-chain
+datascience maintains a near-zero third-party dependency policy to minimize supply-chain
 risk. Do not add external dependencies without prior discussion and explicit
 approval from maintainers.
 

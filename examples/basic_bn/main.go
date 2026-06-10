@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asymmetric-effort/pgmgo/example_models"
-	"github.com/asymmetric-effort/pgmgo/src/inference"
+	"github.com/asymmetric-effort/datascience/example_models"
+	"github.com/asymmetric-effort/datascience/lib/pgm/inference"
 )
 
 func main() {

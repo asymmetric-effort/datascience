@@ -3,7 +3,7 @@
 Package `gpu` provides a compute backend abstraction for accelerated factor operations. The default implementation uses pure Go on the CPU. Future CGO backends (CUDA, OpenCL) can be plugged in via the `Backend` interface.
 
 ```
-import "github.com/asymmetric-effort/pgmgo/lib/gpu"
+import "github.com/asymmetric-effort/datascience/lib/gpu"
 ```
 
 ## Backend Interface
@@ -76,7 +76,7 @@ backend.Close() // no-op for CPU
 
 ## Global Backend Management
 
-The package maintains a global default backend used by other pgmgo components.
+The package maintains a global default backend used by other datascience components.
 
 ```go
 // Get the current backend (CPUBackend by default)

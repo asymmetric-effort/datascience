@@ -1,9 +1,9 @@
 # tabgo
 
-Package `tabgo` provides tabular data structures and operations for loading, filtering, grouping, and transforming columnar data. It serves as the pandas equivalent for pgmgo.
+Package `tabgo` provides tabular data structures and operations for loading, filtering, grouping, and transforming columnar data. It serves as the pandas equivalent for datascience.
 
 ```
-import "github.com/asymmetric-effort/pgmgo/lib/tabgo"
+import "github.com/asymmetric-effort/datascience/lib/tabgo"
 ```
 
 ## Series

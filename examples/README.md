@@ -1,6 +1,6 @@
-# pgmgo Examples
+# datascience Examples
 
-This directory contains runnable Go examples demonstrating the core features of pgmgo.
+This directory contains runnable Go examples demonstrating the core features of datascience.
 
 ## Examples
 
