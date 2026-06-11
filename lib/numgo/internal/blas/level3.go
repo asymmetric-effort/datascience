@@ -14,7 +14,7 @@ const (
 	nr = 4 // micro-panel cols
 )
 
-// Dgemm computes a general matrix-matrix product with cache blocking.
+// Dgemm computes a general matrix-matrix product with cache blocking and bounds validation.
 //
 //	C = alpha * op(A) * op(B) + beta * C
 //
@@ -23,6 +23,30 @@ const (
 // A is m-by-k (after transpose), B is k-by-n (after transpose), C is m-by-n.
 // Matrices are stored in row-major order with leading dimensions lda, ldb, ldc.
 func Dgemm(transA, transB bool, m, n, k int,
+	alpha float64, a []float64, lda int,
+	b []float64, ldb int,
+	beta float64, c []float64, ldc int) {
+
+	if m <= 0 || n <= 0 || k <= 0 {
+		return
+	}
+	if !transA {
+		validateMatrix("Dgemm a", a, m, k, lda)
+	} else {
+		validateMatrix("Dgemm a", a, k, m, lda)
+	}
+	if !transB {
+		validateMatrix("Dgemm b", b, k, n, ldb)
+	} else {
+		validateMatrix("Dgemm b", b, n, k, ldb)
+	}
+	validateMatrix("Dgemm c", c, m, n, ldc)
+	DgemmUnsafe(transA, transB, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+}
+
+// DgemmUnsafe computes a general matrix-matrix product without bounds checks.
+// Use only when slice lengths have already been validated.
+func DgemmUnsafe(transA, transB bool, m, n, k int,
 	alpha float64, a []float64, lda int,
 	b []float64, ldb int,
 	beta float64, c []float64, ldc int) {

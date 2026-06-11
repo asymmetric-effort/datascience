@@ -53,8 +53,14 @@ type pgmgoCPD struct {
 
 // ReadXMLNative parses a datascience-native XML file and returns a BayesianNetwork.
 func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
+	return ReadXMLNativeWithLimit(r, MaxInputSize)
+}
+
+// ReadXMLNativeWithLimit is like ReadXMLNative but accepts a custom maximum
+// input size in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadXMLNativeWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
 	bn := models.NewBayesianNetwork()
-	if err := readXMLNativeWith(r, &realBuilder{bn: bn}); err != nil {
+	if err := readXMLNativeWith(r, &realBuilder{bn: bn}, maxBytes); err != nil {
 		return nil, err
 	}
 	return bn, nil
@@ -62,8 +68,8 @@ func ReadXMLNative(r io.Reader) (*models.BayesianNetwork, error) {
 
 // readXMLNativeWith is the testable implementation of ReadXMLNative.
 // Accepts a bnBuilder interface for mock injection.
-func readXMLNativeWith(r io.Reader, builder bnBuilder) error {
-	data, err := io.ReadAll(r)
+func readXMLNativeWith(r io.Reader, builder bnBuilder, maxBytes int) error {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return fmt.Errorf("readwrite: error reading datascience XML: %w", err)
 	}
@@ -144,9 +150,9 @@ func readXMLNativeWith(r io.Reader, builder bnBuilder) error {
 				child, len(parents), len(evidenceCard))
 		}
 
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
+		numParentConfigs, err := safeParentConfigs(evidenceCard)
+		if err != nil {
+			return fmt.Errorf("readwrite: XML CPD for %q: %w", child, err)
 		}
 
 		// Parse values (space-separated).

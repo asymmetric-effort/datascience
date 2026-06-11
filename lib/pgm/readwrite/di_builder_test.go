@@ -228,7 +228,7 @@ const diXMLBIF2 = `<?xml version="1.0"?>
 
 func TestDI_XMLBIF_AddNodeFail(t *testing.T) {
 	b := newFailOnOp("AddNode", 1)
-	err := readXMLBIFWith(strings.NewReader(diXMLBIF1), b)
+	err := readXMLBIFWith(strings.NewReader(diXMLBIF1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddNode fails")
 	}
@@ -236,7 +236,7 @@ func TestDI_XMLBIF_AddNodeFail(t *testing.T) {
 
 func TestDI_XMLBIF_SetStatesFail(t *testing.T) {
 	b := newFailOnOp("SetStates", 1)
-	err := readXMLBIFWith(strings.NewReader(diXMLBIF1), b)
+	err := readXMLBIFWith(strings.NewReader(diXMLBIF1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when SetStates fails")
 	}
@@ -244,7 +244,7 @@ func TestDI_XMLBIF_SetStatesFail(t *testing.T) {
 
 func TestDI_XMLBIF_AddEdgeFail(t *testing.T) {
 	b := newFailOnOp("AddEdge", 1)
-	err := readXMLBIFWith(strings.NewReader(diXMLBIF2), b)
+	err := readXMLBIFWith(strings.NewReader(diXMLBIF2), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddEdge fails")
 	}
@@ -252,7 +252,7 @@ func TestDI_XMLBIF_AddEdgeFail(t *testing.T) {
 
 func TestDI_XMLBIF_AddCPDFail(t *testing.T) {
 	b := newFailOnOp("AddCPD", 1)
-	err := readXMLBIFWith(strings.NewReader(diXMLBIF1), b)
+	err := readXMLBIFWith(strings.NewReader(diXMLBIF1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddCPD fails")
 	}
@@ -292,7 +292,7 @@ const diXDSL2 = `<?xml version="1.0"?>
 
 func TestDI_XDSL_AddNodeFail(t *testing.T) {
 	b := newFailOnOp("AddNode", 1)
-	err := readXDSLWith(strings.NewReader(diXDSL1), b)
+	err := readXDSLWith(strings.NewReader(diXDSL1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddNode fails")
 	}
@@ -300,7 +300,7 @@ func TestDI_XDSL_AddNodeFail(t *testing.T) {
 
 func TestDI_XDSL_SetStatesFail(t *testing.T) {
 	b := newFailOnOp("SetStates", 1)
-	err := readXDSLWith(strings.NewReader(diXDSL1), b)
+	err := readXDSLWith(strings.NewReader(diXDSL1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when SetStates fails")
 	}
@@ -308,7 +308,7 @@ func TestDI_XDSL_SetStatesFail(t *testing.T) {
 
 func TestDI_XDSL_AddEdgeFail(t *testing.T) {
 	b := newFailOnOp("AddEdge", 1)
-	err := readXDSLWith(strings.NewReader(diXDSL2), b)
+	err := readXDSLWith(strings.NewReader(diXDSL2), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddEdge fails")
 	}
@@ -316,7 +316,7 @@ func TestDI_XDSL_AddEdgeFail(t *testing.T) {
 
 func TestDI_XDSL_AddCPDFail(t *testing.T) {
 	b := newFailOnOp("AddCPD", 1)
-	err := readXDSLWith(strings.NewReader(diXDSL1), b)
+	err := readXDSLWith(strings.NewReader(diXDSL1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddCPD fails")
 	}
@@ -376,7 +376,7 @@ const diPomdpX2 = `<?xml version="1.0"?>
 func TestDI_PomdpX_AddNodeFail(t *testing.T) {
 	b := newFailOnOp("AddNode", 1)
 	bn := models.NewBayesianNetwork()
-	err := readPomdpXWith(strings.NewReader(diPomdpX1), b, bn)
+	err := readPomdpXWith(strings.NewReader(diPomdpX1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddNode fails")
 	}
@@ -385,7 +385,7 @@ func TestDI_PomdpX_AddNodeFail(t *testing.T) {
 func TestDI_PomdpX_SetStatesFail(t *testing.T) {
 	b := newFailOnOp("SetStates", 1)
 	bn := models.NewBayesianNetwork()
-	err := readPomdpXWith(strings.NewReader(diPomdpX1), b, bn)
+	err := readPomdpXWith(strings.NewReader(diPomdpX1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when SetStates fails")
 	}
@@ -394,7 +394,7 @@ func TestDI_PomdpX_SetStatesFail(t *testing.T) {
 func TestDI_PomdpX_AddCPDFail(t *testing.T) {
 	b := newFailOnOp("AddCPD", 1)
 	bn := models.NewBayesianNetwork()
-	err := readPomdpXWith(strings.NewReader(diPomdpX1), b, bn)
+	err := readPomdpXWith(strings.NewReader(diPomdpX1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddCPD fails")
 	}
@@ -403,7 +403,7 @@ func TestDI_PomdpX_AddCPDFail(t *testing.T) {
 func TestDI_PomdpX_AddEdgeFail(t *testing.T) {
 	b := newFailOnOp("AddEdge", 1)
 	bn := models.NewBayesianNetwork()
-	err := readPomdpXWith(strings.NewReader(diPomdpX2), b, bn)
+	err := readPomdpXWith(strings.NewReader(diPomdpX2), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddEdge fails")
 	}
@@ -422,7 +422,7 @@ func TestDI_PomdpX_DefaultCPDFail(t *testing.T) {
 `
 	b := newFailOnOp("AddCPD", 1)
 	bn := models.NewBayesianNetwork()
-	err := readPomdpXWith(strings.NewReader(input), b, bn)
+	err := readPomdpXWith(strings.NewReader(input), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when default AddCPD fails")
 	}
@@ -492,7 +492,7 @@ const diXBN2 = `<?xml version="1.0"?>
 func TestDI_XBN_AddNodeFail(t *testing.T) {
 	b := newFailOnOp("AddNode", 1)
 	bn := models.NewBayesianNetwork()
-	err := readXBNWith(strings.NewReader(diXBN1), b, bn)
+	err := readXBNWith(strings.NewReader(diXBN1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddNode fails")
 	}
@@ -501,7 +501,7 @@ func TestDI_XBN_AddNodeFail(t *testing.T) {
 func TestDI_XBN_SetStatesFail(t *testing.T) {
 	b := newFailOnOp("SetStates", 1)
 	bn := models.NewBayesianNetwork()
-	err := readXBNWith(strings.NewReader(diXBN1), b, bn)
+	err := readXBNWith(strings.NewReader(diXBN1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when SetStates fails")
 	}
@@ -510,7 +510,7 @@ func TestDI_XBN_SetStatesFail(t *testing.T) {
 func TestDI_XBN_AddEdgeFail(t *testing.T) {
 	b := newFailOnOp("AddEdge", 1)
 	bn := models.NewBayesianNetwork()
-	err := readXBNWith(strings.NewReader(diXBN2), b, bn)
+	err := readXBNWith(strings.NewReader(diXBN2), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddEdge fails")
 	}
@@ -519,7 +519,7 @@ func TestDI_XBN_AddEdgeFail(t *testing.T) {
 func TestDI_XBN_AddCPDFail(t *testing.T) {
 	b := newFailOnOp("AddCPD", 1)
 	bn := models.NewBayesianNetwork()
-	err := readXBNWith(strings.NewReader(diXBN1), b, bn)
+	err := readXBNWith(strings.NewReader(diXBN1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddCPD fails")
 	}
@@ -547,7 +547,7 @@ func TestDI_XBN_DefaultCPDFail(t *testing.T) {
 `
 	b := newFailOnOp("AddCPD", 2)
 	bn := models.NewBayesianNetwork()
-	err := readXBNWith(strings.NewReader(input), b, bn)
+	err := readXBNWith(strings.NewReader(input), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when default AddCPD fails")
 	}
@@ -583,7 +583,7 @@ const diXMLNative2 = `<?xml version="1.0"?>
 
 func TestDI_XMLNative_AddNodeFail(t *testing.T) {
 	b := newFailOnOp("AddNode", 1)
-	err := readXMLNativeWith(strings.NewReader(diXMLNative1), b)
+	err := readXMLNativeWith(strings.NewReader(diXMLNative1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddNode fails")
 	}
@@ -591,7 +591,7 @@ func TestDI_XMLNative_AddNodeFail(t *testing.T) {
 
 func TestDI_XMLNative_SetStatesFail(t *testing.T) {
 	b := newFailOnOp("SetStates", 1)
-	err := readXMLNativeWith(strings.NewReader(diXMLNative1), b)
+	err := readXMLNativeWith(strings.NewReader(diXMLNative1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when SetStates fails")
 	}
@@ -599,7 +599,7 @@ func TestDI_XMLNative_SetStatesFail(t *testing.T) {
 
 func TestDI_XMLNative_AddEdgeFail(t *testing.T) {
 	b := newFailOnOp("AddEdge", 1)
-	err := readXMLNativeWith(strings.NewReader(diXMLNative2), b)
+	err := readXMLNativeWith(strings.NewReader(diXMLNative2), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddEdge fails")
 	}
@@ -607,7 +607,7 @@ func TestDI_XMLNative_AddEdgeFail(t *testing.T) {
 
 func TestDI_XMLNative_AddCPDFail(t *testing.T) {
 	b := newFailOnOp("AddCPD", 1)
-	err := readXMLNativeWith(strings.NewReader(diXMLNative1), b)
+	err := readXMLNativeWith(strings.NewReader(diXMLNative1), b, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when AddCPD fails")
 	}
@@ -750,7 +750,7 @@ func TestDI_PomdpX_ConditionalCPDCreateFail(t *testing.T) {
 	// Test with AddCPD failing on first conditional CPD
 	b := newFailOnOp("AddCPD", 1)
 	bn := models.NewBayesianNetwork()
-	err := readPomdpXWith(strings.NewReader(input), b, bn)
+	err := readPomdpXWith(strings.NewReader(input), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when conditional AddCPD fails")
 	}
@@ -912,7 +912,7 @@ func TestDI_NET_CPDCreateFail(t *testing.T) {
 func TestDI_XBN_CPDCreateFail2(t *testing.T) {
 	b := newFailOnOp("AddCPD", 1)
 	bn := models.NewBayesianNetwork()
-	err := readXBNWith(strings.NewReader(diXBN1), b, bn)
+	err := readXBNWith(strings.NewReader(diXBN1), b, bn, MaxInputSize)
 	if err == nil {
 		t.Fatal("expected error when XBN AddCPD fails")
 	}

@@ -114,9 +114,9 @@ func readNETWith(r io.Reader, builder bnBuilder) error {
 				evidenceCard = append(evidenceCard, pi.card)
 			}
 
-			numParentConfigs := 1
-			for _, ec := range evidenceCard {
-				numParentConfigs *= ec
+			numParentConfigs, err := safeParentConfigs(evidenceCard)
+			if err != nil {
+				return fmt.Errorf("readwrite: NET potential for %q: %w", child, err)
 			}
 
 			// Parse data from block.

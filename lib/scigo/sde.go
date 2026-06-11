@@ -24,13 +24,16 @@ type SDESystem struct {
 	Diffusion func(x []float64, t float64) []float64
 }
 
-// EulerMaruyama solves the scalar SDE
-//
-//	dX = drift(X, t) dt + diffusion(X, t) dW
-//
-// using the Euler-Maruyama method. It generates nPaths sample paths from x0
-// over the interval tSpan with time step dt. seed controls the random number generator.
+// EulerMaruyama solves the scalar SDE using the Euler-Maruyama method.
+// Total allocation is capped at MaxSimulationElements. Use EulerMaruyamaWithLimit
+// for larger simulations.
 func EulerMaruyama(drift, diffusion func(x, t float64) float64, x0 float64, tSpan [2]float64, dt float64, nPaths int, seed int64) *SDEResult {
+	return EulerMaruyamaWithLimit(drift, diffusion, x0, tSpan, dt, nPaths, seed, MaxSimulationElements)
+}
+
+// EulerMaruyamaWithLimit is like EulerMaruyama but accepts a custom maximum
+// total element count (nPaths * nSteps).
+func EulerMaruyamaWithLimit(drift, diffusion func(x, t float64) float64, x0 float64, tSpan [2]float64, dt float64, nPaths int, seed int64, maxElements int) *SDEResult {
 	if dt <= 0 {
 		panic("scigo: EulerMaruyama dt must be positive")
 	}
@@ -42,6 +45,7 @@ func EulerMaruyama(drift, diffusion func(x, t float64) float64, x0 float64, tSpa
 	}
 
 	nSteps := int(math.Ceil((tSpan[1] - tSpan[0]) / dt))
+	checkSimulationSize(nPaths, nSteps+1, maxElements)
 	actualDt := (tSpan[1] - tSpan[0]) / float64(nSteps)
 	sqrtDt := math.Sqrt(actualDt)
 
@@ -68,14 +72,15 @@ func EulerMaruyama(drift, diffusion func(x, t float64) float64, x0 float64, tSpa
 	return &SDEResult{T: tVals, X: paths}
 }
 
-// Milstein solves the scalar SDE
-//
-//	dX = drift(X, t) dt + diffusion(X, t) dW
-//
-// using the Milstein method, which includes a correction term involving
-// the derivative of the diffusion coefficient. This gives strong order 1.0
-// convergence compared to 0.5 for Euler-Maruyama.
+// Milstein solves the scalar SDE using the Milstein method (strong order 1.0).
+// Total allocation is capped at MaxSimulationElements. Use MilsteinWithLimit
+// for larger simulations.
 func Milstein(drift, diffusion, diffusionDeriv func(x, t float64) float64, x0 float64, tSpan [2]float64, dt float64, nPaths int, seed int64) *SDEResult {
+	return MilsteinWithLimit(drift, diffusion, diffusionDeriv, x0, tSpan, dt, nPaths, seed, MaxSimulationElements)
+}
+
+// MilsteinWithLimit is like Milstein but accepts a custom maximum total element count.
+func MilsteinWithLimit(drift, diffusion, diffusionDeriv func(x, t float64) float64, x0 float64, tSpan [2]float64, dt float64, nPaths int, seed int64, maxElements int) *SDEResult {
 	if dt <= 0 {
 		panic("scigo: Milstein dt must be positive")
 	}
@@ -87,6 +92,7 @@ func Milstein(drift, diffusion, diffusionDeriv func(x, t float64) float64, x0 fl
 	}
 
 	nSteps := int(math.Ceil((tSpan[1] - tSpan[0]) / dt))
+	checkSimulationSize(nPaths, nSteps+1, maxElements)
 	actualDt := (tSpan[1] - tSpan[0]) / float64(nSteps)
 	sqrtDt := math.Sqrt(actualDt)
 
@@ -116,11 +122,15 @@ func Milstein(drift, diffusion, diffusionDeriv func(x, t float64) float64, x0 fl
 }
 
 // SolveSDESystem solves a vector-valued SDE system using the Euler-Maruyama method.
-// x0 is the initial state vector, tSpan is the time interval, dt is the time step,
-// nPaths is the number of sample paths, and seed controls the random number generator.
-// The result contains nPaths * dim entries in X, organized as:
-// X[p*dim + d] is the d-th component of the p-th sample path.
+// Total allocation is capped at MaxSimulationElements. Use SolveSDESystemWithLimit
+// for larger simulations.
 func SolveSDESystem(sys *SDESystem, x0 []float64, tSpan [2]float64, dt float64, nPaths int, seed int64) *SDEResult {
+	return SolveSDESystemWithLimit(sys, x0, tSpan, dt, nPaths, seed, MaxSimulationElements)
+}
+
+// SolveSDESystemWithLimit is like SolveSDESystem but accepts a custom maximum
+// total element count.
+func SolveSDESystemWithLimit(sys *SDESystem, x0 []float64, tSpan [2]float64, dt float64, nPaths int, seed int64, maxElements int) *SDEResult {
 	if sys == nil {
 		panic("scigo: SolveSDESystem sys must not be nil")
 	}
@@ -138,6 +148,7 @@ func SolveSDESystem(sys *SDESystem, x0 []float64, tSpan [2]float64, dt float64, 
 	}
 
 	nSteps := int(math.Ceil((tSpan[1] - tSpan[0]) / dt))
+	checkSimulationSize(nPaths*sys.Dim, nSteps+1, maxElements)
 	actualDt := (tSpan[1] - tSpan[0]) / float64(nSteps)
 	sqrtDt := math.Sqrt(actualDt)
 	dim := sys.Dim

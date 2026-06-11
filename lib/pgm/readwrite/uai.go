@@ -183,9 +183,9 @@ func uaiBuildNetwork(builder bnBuilder, numVars int, cards []int, numFactors int
 			}
 		}
 
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
+		numParentConfigs, err := safeParentConfigs(evidenceCard)
+		if err != nil {
+			return fmt.Errorf("readwrite: UAI factor %d: %w", f, err)
 		}
 
 		if len(vals) != childCard*numParentConfigs {

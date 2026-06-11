@@ -1,4 +1,4 @@
-//go:generate bash -c "cd ../../tests/python && python3 generate_fixtures.py --package tabgo --output ../fixtures"
+//go:generate python3 ../../tests/python/generate_fixtures.py --package tabgo --output ../../tests/fixtures
 
 // Package tabgo provides tabular data structures and operations for
 // loading, filtering, grouping, and transforming columnar data.

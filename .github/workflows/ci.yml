@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
@@ -116,6 +114,9 @@ jobs:
     name: Deploy Website
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: build-website
+    permissions:
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -141,10 +142,12 @@ jobs:
           go-version-file: go.mod
 
       - name: Verify Go library installs
+        env:
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           cd $(mktemp -d)
           go mod init verify-datascience
-          go get github.com/asymmetric-effort/datascience@${{ github.sha }}
+          go get github.com/asymmetric-effort/datascience@${COMMIT_SHA}
           echo "Go library installs successfully"
 
       - name: Wait for deployment propagation
@@ -191,8 +194,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Poke Go module proxy
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          echo "Indexing ${{ github.ref_name }} on proxy.golang.org..."
-          curl -sf "https://proxy.golang.org/github.com/asymmetric-effort/datascience/@v/${{ github.ref_name }}.info"
+          echo "Indexing ${REF_NAME} on proxy.golang.org..."
+          curl -sf "https://proxy.golang.org/github.com/asymmetric-effort/datascience/@v/${REF_NAME}.info"
           echo ""
           echo "Indexed successfully."

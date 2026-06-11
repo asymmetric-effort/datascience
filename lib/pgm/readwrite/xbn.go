@@ -86,8 +86,14 @@ type xbnPrivDist struct {
 // references and DPIS/DPI with INDEXES attributes for conditional probability
 // distributions.
 func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
+	return ReadXBNWithLimit(r, MaxInputSize)
+}
+
+// ReadXBNWithLimit is like ReadXBN but accepts a custom maximum input size
+// in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadXBNWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
 	bn := models.NewBayesianNetwork()
-	if err := readXBNWith(r, &realBuilder{bn: bn}, bn); err != nil {
+	if err := readXBNWith(r, &realBuilder{bn: bn}, bn, maxBytes); err != nil {
 		return nil, err
 	}
 	return bn, nil
@@ -95,8 +101,8 @@ func ReadXBN(r io.Reader) (*models.BayesianNetwork, error) {
 
 // readXBNWith is the testable implementation of ReadXBN. Accepts a bnBuilder
 // interface for mock injection.
-func readXBNWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork) error {
-	data, err := io.ReadAll(r)
+func readXBNWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork, maxBytes int) error {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return fmt.Errorf("readwrite: error reading XBN: %w", err)
 	}
@@ -165,9 +171,9 @@ func readXBNWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork) err
 			evidenceCard = append(evidenceCard, pi.card)
 		}
 
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
+		numParentConfigs, err := safeParentConfigs(evidenceCard)
+		if err != nil {
+			return fmt.Errorf("readwrite: XBN distribution for %q: %w", child, err)
 		}
 
 		// Initialize values array: values[childState][parentConfig].

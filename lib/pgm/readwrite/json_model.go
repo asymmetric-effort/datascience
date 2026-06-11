@@ -30,7 +30,13 @@ type jsonCPD struct {
 // ReadJSON parses a JSON file and returns a fully populated BayesianNetwork,
 // including nodes, edges, states, and CPDs.
 func ReadJSON(r io.Reader) (*models.BayesianNetwork, error) {
-	data, err := io.ReadAll(r)
+	return ReadJSONWithLimit(r, MaxInputSize)
+}
+
+// ReadJSONWithLimit is like ReadJSON but accepts a custom maximum input size
+// in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadJSONWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return nil, fmt.Errorf("readwrite: error reading JSON: %w", err)
 	}
@@ -71,7 +77,13 @@ func jsonAddCPDs(jn *jsonNetwork, builder bnBuilder) error {
 // ReadJSONStructure parses a JSON file and returns a BayesianNetwork with
 // structure only (nodes, edges, states). CPDs in the JSON are ignored.
 func ReadJSONStructure(r io.Reader) (*models.BayesianNetwork, error) {
-	data, err := io.ReadAll(r)
+	return ReadJSONStructureWithLimit(r, MaxInputSize)
+}
+
+// ReadJSONStructureWithLimit is like ReadJSONStructure but accepts a custom
+// maximum input size in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadJSONStructureWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return nil, fmt.Errorf("readwrite: error reading JSON: %w", err)
 	}

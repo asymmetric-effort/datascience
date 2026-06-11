@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asymmetric-effort/datascience/lib/pgm/utils"
 	"github.com/asymmetric-effort/datascience/lib/tabgo"
 )
 
@@ -328,9 +329,13 @@ func (cpd *TabularCPD) String() string {
 
 // ToCSV writes the CPD table to a CSV file.
 func (cpd *TabularCPD) ToCSV(filename string) error {
+	filename, err := utils.SafePath(filename)
+	if err != nil {
+		return fmt.Errorf("factors: %w", err)
+	}
 	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("factors: failed to create file %q: %w", filename, err)
+		return fmt.Errorf("factors: failed to create file: %w", err)
 	}
 	defer file.Close()
 

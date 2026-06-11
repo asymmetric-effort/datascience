@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
+	"sync/atomic"
 )
 
 // RNG wraps a seeded random source for reproducible random number generation.
@@ -220,11 +221,17 @@ func (r *RNG) Dirichlet(alpha []float64) []float64 {
 }
 
 // defaultRNG is a package-level RNG used by the Seed function.
-var defaultRNG = NewRNG(0)
+// Stored as atomic.Pointer to prevent data races on concurrent Seed() calls.
+var defaultRNG atomic.Pointer[RNG]
+
+func init() {
+	defaultRNG.Store(NewRNG(0))
+}
 
 // Seed sets the seed for the package-level default RNG.
+// Safe for concurrent use.
 func Seed(seed int64) {
-	defaultRNG = NewRNG(seed)
+	defaultRNG.Store(NewRNG(seed))
 }
 
 // Random returns an NDArray of the given shape with values drawn uniformly from [0, 1).

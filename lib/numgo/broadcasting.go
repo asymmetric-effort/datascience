@@ -79,7 +79,7 @@ func BroadcastTo(a *NDArray, shape []int) (*NDArray, error) {
 		}
 	}
 
-	totalSize := product(shape)
+	totalSize := productUnsafe(shape)
 	data := make([]float64, totalSize)
 	outStrides := computeStrides(shape)
 	ndim := len(shape)

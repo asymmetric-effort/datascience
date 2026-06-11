@@ -88,7 +88,7 @@ func TestGBMMeanConvergence(t *testing.T) {
 	T := 1.0
 	nPaths := 100000
 
-	result := GeometricBrownianMotion(S0, mu, sigma, T, 1000, nPaths, 789)
+	result := GeometricBrownianMotionWithLimit(S0, mu, sigma, T, 1000, nPaths, 789, 200_000_000)
 	n := len(result.T) - 1
 
 	sum := 0.0
@@ -178,7 +178,7 @@ func TestOUStationaryVariance(t *testing.T) {
 	nPaths := 50000
 
 	// Start at the mean to avoid transient effects
-	result := OrnsteinUhlenbeck(mu, theta, mu, sigma, T, 2000, nPaths, 555)
+	result := OrnsteinUhlenbeckWithLimit(mu, theta, mu, sigma, T, 2000, nPaths, 555, 200_000_000)
 	n := len(result.T) - 1
 
 	sum := 0.0

@@ -26,7 +26,21 @@ func pdfNormal(x float64) float64 {
 	return math.Exp(-0.5*x*x) / math.Sqrt(2*math.Pi)
 }
 
+// validateBSInputs panics if Black-Scholes inputs are invalid.
+func validateBSInputs(S, K, sigma float64) {
+	if S <= 0 {
+		panic("scigo: Black-Scholes S (underlying price) must be positive")
+	}
+	if K <= 0 {
+		panic("scigo: Black-Scholes K (strike price) must be positive")
+	}
+	if sigma < 0 {
+		panic("scigo: Black-Scholes sigma (volatility) must be non-negative")
+	}
+}
+
 // bsD1D2 computes the d1 and d2 parameters for Black-Scholes.
+// Caller must ensure sigma > 0 and T > 0.
 func bsD1D2(S, K, T, r, sigma float64) (float64, float64) {
 	d1 := (math.Log(S/K) + (r+0.5*sigma*sigma)*T) / (sigma * math.Sqrt(T))
 	d2 := d1 - sigma*math.Sqrt(T)
@@ -36,10 +50,15 @@ func bsD1D2(S, K, T, r, sigma float64) (float64, float64) {
 // BlackScholesCall computes the Black-Scholes price of a European call option.
 // S is the underlying price, K is the strike, T is time to expiration (years),
 // r is the risk-free rate, and sigma is the volatility.
+// Panics if S <= 0, K <= 0, or sigma < 0.
 func BlackScholesCall(S, K, T, r, sigma float64) float64 {
+	validateBSInputs(S, K, sigma)
 	if T <= 0 {
-		// At expiration
 		return math.Max(S-K, 0)
+	}
+	if sigma == 0 {
+		// Zero volatility: deterministic forward price.
+		return math.Max(S*math.Exp(r*T)-K, 0) * math.Exp(-r*T)
 	}
 	d1, d2 := bsD1D2(S, K, T, r, sigma)
 	return S*cdfNormal(d1) - K*math.Exp(-r*T)*cdfNormal(d2)
@@ -48,9 +67,15 @@ func BlackScholesCall(S, K, T, r, sigma float64) float64 {
 // BlackScholesPut computes the Black-Scholes price of a European put option.
 // S is the underlying price, K is the strike, T is time to expiration (years),
 // r is the risk-free rate, and sigma is the volatility.
+// Panics if S <= 0, K <= 0, or sigma < 0.
 func BlackScholesPut(S, K, T, r, sigma float64) float64 {
+	validateBSInputs(S, K, sigma)
 	if T <= 0 {
 		return math.Max(K-S, 0)
+	}
+	if sigma == 0 {
+		// Zero volatility: deterministic forward price.
+		return math.Max(K-S*math.Exp(r*T), 0) * math.Exp(-r*T)
 	}
 	d1, d2 := bsD1D2(S, K, T, r, sigma)
 	return K*math.Exp(-r*T)*cdfNormal(-d2) - S*cdfNormal(-d1)
@@ -59,13 +84,24 @@ func BlackScholesPut(S, K, T, r, sigma float64) float64 {
 // BlackScholesGreeks computes the Greeks for a European call option.
 // S is the underlying price, K is the strike, T is time to expiration (years),
 // r is the risk-free rate, and sigma is the volatility.
+// Panics if S <= 0, K <= 0, or sigma < 0.
 func BlackScholesGreeks(S, K, T, r, sigma float64) *Greeks {
+	validateBSInputs(S, K, sigma)
 	if T <= 0 {
 		delta := 0.0
 		if S > K {
 			delta = 1.0
 		}
 		return &Greeks{Delta: delta}
+	}
+	if sigma == 0 {
+		// Zero volatility: option is either deep ITM (delta=1) or OTM (delta=0).
+		forward := S * math.Exp(r*T)
+		delta := 0.0
+		if forward > K {
+			delta = 1.0
+		}
+		return &Greeks{Delta: delta, Rho: K * T * math.Exp(-r*T)}
 	}
 
 	d1, d2 := bsD1D2(S, K, T, r, sigma)
@@ -95,6 +131,12 @@ func BlackScholesGreeks(S, K, T, r, sigma float64) *Greeks {
 // T is time to expiration, r is the risk-free rate.
 // optionType must be "call" or "put".
 func ImpliedVolatility(price, S, K, T, r float64, optionType string) (float64, error) {
+	if S <= 0 {
+		return 0, errors.New("scigo: ImpliedVolatility S must be positive")
+	}
+	if K <= 0 {
+		return 0, errors.New("scigo: ImpliedVolatility K must be positive")
+	}
 	if price <= 0 {
 		return 0, errors.New("scigo: ImpliedVolatility price must be positive")
 	}

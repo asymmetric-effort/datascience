@@ -19,7 +19,7 @@ func Dot(a, b *NDArray) (*NDArray, error) {
 		n := a.shape[0]
 		var sum float64
 		if blas.UseBLAS(1, n) {
-			sum = blas.Ddot(n, a.data, 1, b.data, 1)
+			sum = blas.DdotUnsafe(n, a.data, 1, b.data, 1)
 		} else {
 			for i := 0; i < n; i++ {
 				sum += a.data[i] * b.data[i]
@@ -67,7 +67,7 @@ func Matmul(a, b *NDArray) (*NDArray, error) {
 		minDim = k1
 	}
 	if blas.UseBLAS(3, minDim) {
-		blas.Dgemm(false, false, m, n, k1, 1.0, a.data, k1, b.data, n, 0.0, data, n)
+		blas.DgemmUnsafe(false, false, m, n, k1, 1.0, a.data, k1, b.data, n, 0.0, data, n)
 	} else {
 		for i := 0; i < m; i++ {
 			for j := 0; j < n; j++ {
@@ -305,11 +305,11 @@ func solveBLAS(a, b *NDArray) (*NDArray, error) {
 		x[i] = b.data[piv[i]]
 	}
 
-	// Solve L*y = pb using Dtrsv (unit diagonal lower triangular).
-	blas.Dtrsv('L', 'N', 'U', n, lu, n, x, 1)
+	// Solve L*y = pb using DtrsvUnsafe (unit diagonal lower triangular).
+	blas.DtrsvUnsafe('L', 'N', 'U', n, lu, n, x, 1)
 
-	// Solve U*x = y using Dtrsv (non-unit diagonal upper triangular).
-	blas.Dtrsv('U', 'N', 'N', n, lu, n, x, 1)
+	// Solve U*x = y using DtrsvUnsafe (non-unit diagonal upper triangular).
+	blas.DtrsvUnsafe('U', 'N', 'N', n, lu, n, x, 1)
 
 	return NewNDArray([]int{n}, x), nil
 }

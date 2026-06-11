@@ -134,6 +134,10 @@ func (lgbn *LinearGaussianBayesianNetwork) Copy() *LinearGaussianBayesianNetwork
 // Save writes the LinearGaussianBayesianNetwork to a file in a simple text
 // format (BIF-like for LG networks).
 func (lgbn *LinearGaussianBayesianNetwork) Save(filename string) error {
+	filename, err := safePath(filename)
+	if err != nil {
+		return err
+	}
 	f, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("models: Save: %w", err)
@@ -207,6 +211,10 @@ func lgWriteImpl(w bifWriter, lgbn *LinearGaussianBayesianNetwork) error {
 
 // Load reads a LinearGaussianBayesianNetwork from a file written by Save.
 func LoadLinearGaussianBayesianNetwork(filename string) (*LinearGaussianBayesianNetwork, error) {
+	filename, err := safePath(filename)
+	if err != nil {
+		return nil, err
+	}
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("models: Load: %w", err)

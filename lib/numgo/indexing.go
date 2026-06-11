@@ -27,7 +27,7 @@ func Take(a *NDArray, indices []int, axis int) (*NDArray, error) {
 	outShape := make([]int, a.Ndim())
 	copy(outShape, a.shape)
 	outShape[axis] = len(indices)
-	outSize := product(outShape)
+	outSize := productUnsafe(outShape)
 
 	data := make([]float64, outSize)
 	outStrides := computeStrides(outShape)
@@ -146,7 +146,7 @@ func Compress(condition []bool, a *NDArray, axis int) (*NDArray, error) {
 	outShape := make([]int, a.Ndim())
 	copy(outShape, a.shape)
 	outShape[axis] = trueCount
-	outSize := product(outShape)
+	outSize := productUnsafe(outShape)
 	data := make([]float64, outSize)
 
 	outStrides := computeStrides(outShape)
@@ -275,7 +275,7 @@ func AsStrided(a *NDArray, shape, strides []int) *NDArray {
 	copy(st, strides)
 
 	// Compute the required data size based on shape and strides.
-	size := product(s)
+	size := productUnsafe(s)
 	data := make([]float64, size)
 
 	// Fill by iterating over all positions in the output.

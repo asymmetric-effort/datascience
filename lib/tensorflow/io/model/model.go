@@ -10,6 +10,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+
+	"github.com/asymmetric-effort/datascience/internal/safepath"
 )
 
 // maxWeightFileSize limits the maximum weight file size (1GB).
@@ -32,6 +34,10 @@ type ModelConfig struct {
 
 // SaveConfig writes a model configuration to a JSON file.
 func SaveConfig(config *ModelConfig, path string) error {
+	path, err := safepath.Validate(path)
+	if err != nil {
+		return fmt.Errorf("model: %w", err)
+	}
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
@@ -41,6 +47,10 @@ func SaveConfig(config *ModelConfig, path string) error {
 
 // LoadConfig reads a model configuration from a JSON file.
 func LoadConfig(path string) (*ModelConfig, error) {
+	path, err := safepath.Validate(path)
+	if err != nil {
+		return nil, fmt.Errorf("model: %w", err)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
@@ -55,6 +65,10 @@ func LoadConfig(path string) (*ModelConfig, error) {
 // SaveWeights writes model weights to a binary file.
 // Format: [uint64 count][float64 values...]
 func SaveWeights(weights []float64, path string) error {
+	path, err := safepath.Validate(path)
+	if err != nil {
+		return fmt.Errorf("model: %w", err)
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create weights file: %w", err)
@@ -76,6 +90,10 @@ func SaveWeights(weights []float64, path string) error {
 
 // LoadWeights reads model weights from a binary file.
 func LoadWeights(path string) ([]float64, error) {
+	path, err := safepath.Validate(path)
+	if err != nil {
+		return nil, fmt.Errorf("model: %w", err)
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open weights file: %w", err)
@@ -96,6 +114,13 @@ func LoadWeights(path string) ([]float64, error) {
 		return nil, fmt.Errorf("read count: %w", err)
 	}
 
+	// Validate count against actual file size to prevent OOM from crafted files.
+	// File layout: 8 bytes (count) + count*8 bytes (float64 values).
+	maxCount := uint64(info.Size()-8) / 8
+	if count > maxCount {
+		return nil, fmt.Errorf("weight count %d exceeds file capacity (%d bytes)", count, info.Size())
+	}
+
 	weights := make([]float64, count)
 	for i := range weights {
 		if err := binary.Read(f, binary.LittleEndian, &weights[i]); err != nil {
@@ -110,6 +135,10 @@ func LoadWeights(path string) ([]float64, error) {
 
 // SaveModel saves both config and weights to a directory.
 func SaveModel(config *ModelConfig, weights []float64, dir string) error {
+	dir, err := safepath.Validate(dir)
+	if err != nil {
+		return fmt.Errorf("model: %w", err)
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
@@ -124,6 +153,10 @@ func SaveModel(config *ModelConfig, weights []float64, dir string) error {
 
 // LoadModel loads both config and weights from a directory.
 func LoadModel(dir string) (*ModelConfig, []float64, error) {
+	dir, err := safepath.Validate(dir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("model: %w", err)
+	}
 	config, err := LoadConfig(filepath.Join(dir, "config.json"))
 	if err != nil {
 		return nil, nil, err
@@ -144,6 +177,10 @@ type Checkpoint struct {
 
 // SaveCheckpoint saves a checkpoint to disk.
 func SaveCheckpoint(ckpt *Checkpoint, weights []float64, dir string) error {
+	dir, err := safepath.Validate(dir)
+	if err != nil {
+		return fmt.Errorf("model: %w", err)
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
@@ -164,6 +201,10 @@ func SaveCheckpoint(ckpt *Checkpoint, weights []float64, dir string) error {
 
 // LoadCheckpoint loads a checkpoint from disk.
 func LoadCheckpoint(path string) (*Checkpoint, error) {
+	path, err := safepath.Validate(path)
+	if err != nil {
+		return nil, fmt.Errorf("model: %w", err)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read checkpoint: %w", err)

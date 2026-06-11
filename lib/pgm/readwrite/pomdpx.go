@@ -69,8 +69,14 @@ type pomdpxEntry struct {
 // unconditional CPDs, and StateTransitionFunction for conditional CPDs with
 // parent references via Entry instance/probability pairs.
 func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
+	return ReadPomdpXWithLimit(r, MaxInputSize)
+}
+
+// ReadPomdpXWithLimit is like ReadPomdpX but accepts a custom maximum input
+// size in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadPomdpXWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
 	bn := models.NewBayesianNetwork()
-	if err := readPomdpXWith(r, &realBuilder{bn: bn}, bn); err != nil {
+	if err := readPomdpXWith(r, &realBuilder{bn: bn}, bn, maxBytes); err != nil {
 		return nil, err
 	}
 	return bn, nil
@@ -78,8 +84,8 @@ func ReadPomdpX(r io.Reader) (*models.BayesianNetwork, error) {
 
 // readPomdpXWith is the testable implementation of ReadPomdpX. Accepts a
 // bnBuilder interface for mock injection.
-func readPomdpXWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork) error {
-	data, err := io.ReadAll(r)
+func readPomdpXWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork, maxBytes int) error {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return fmt.Errorf("readwrite: error reading PomdpX: %w", err)
 	}
@@ -171,9 +177,9 @@ func readPomdpXWith(r io.Reader, builder bnBuilder, bn *models.BayesianNetwork) 
 			}
 		}
 
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
+		numParentConfigs, err := safeParentConfigs(evidenceCard)
+		if err != nil {
+			return fmt.Errorf("readwrite: PomdpX CondProb for %q: %w", child, err)
 		}
 
 		if len(parents) == 0 {

@@ -40,8 +40,14 @@ type xdslExts struct {
 
 // ReadXDSL parses a GeNIe XDSL format file and returns a BayesianNetwork.
 func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
+	return ReadXDSLWithLimit(r, MaxInputSize)
+}
+
+// ReadXDSLWithLimit is like ReadXDSL but accepts a custom maximum input size
+// in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadXDSLWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
 	bn := models.NewBayesianNetwork()
-	if err := readXDSLWith(r, &realBuilder{bn: bn}); err != nil {
+	if err := readXDSLWith(r, &realBuilder{bn: bn}, maxBytes); err != nil {
 		return nil, err
 	}
 	return bn, nil
@@ -49,8 +55,8 @@ func ReadXDSL(r io.Reader) (*models.BayesianNetwork, error) {
 
 // readXDSLWith is the testable implementation of ReadXDSL. Accepts a bnBuilder
 // interface for mock injection.
-func readXDSLWith(r io.Reader, builder bnBuilder) error {
-	data, err := io.ReadAll(r)
+func readXDSLWith(r io.Reader, builder bnBuilder, maxBytes int) error {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return fmt.Errorf("readwrite: error reading XDSL: %w", err)
 	}
@@ -109,9 +115,9 @@ func readXDSLWith(r io.Reader, builder bnBuilder) error {
 			}
 		}
 
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
+		numParentConfigs, err := safeParentConfigs(evidenceCard)
+		if err != nil {
+			return fmt.Errorf("readwrite: XDSL CPT for %q: %w", child, err)
 		}
 
 		// Parse probabilities.

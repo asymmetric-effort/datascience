@@ -263,11 +263,13 @@ func bifParseProbHeader(line string) (string, []string, error) {
 
 // bifParseProbBlock parses the content of a probability { } block into a TabularCPD.
 func bifParseProbBlock(child *bifVarInfo, parents []string, parentInfos []*bifVarInfo, blockLines []string) (*factors.TabularCPD, error) {
-	numParentConfigs := 1
 	var evidenceCard []int
 	for _, pi := range parentInfos {
-		numParentConfigs *= pi.card
 		evidenceCard = append(evidenceCard, pi.card)
+	}
+	numParentConfigs, err := safeParentConfigs(evidenceCard)
+	if err != nil {
+		return nil, fmt.Errorf("readwrite: BIF probability block for %q: %w", child.name, err)
 	}
 
 	// values[childState][parentConfig] — we'll fill this.

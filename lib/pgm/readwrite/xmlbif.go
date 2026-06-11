@@ -38,8 +38,14 @@ type xmlDefinition struct {
 
 // ReadXMLBIF parses an XMLBIF format file and returns a BayesianNetwork.
 func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
+	return ReadXMLBIFWithLimit(r, MaxInputSize)
+}
+
+// ReadXMLBIFWithLimit is like ReadXMLBIF but accepts a custom maximum input
+// size in bytes. Use this for models larger than MaxInputSize (1 MB).
+func ReadXMLBIFWithLimit(r io.Reader, maxBytes int) (*models.BayesianNetwork, error) {
 	bn := models.NewBayesianNetwork()
-	if err := readXMLBIFWith(r, &realBuilder{bn: bn}); err != nil {
+	if err := readXMLBIFWith(r, &realBuilder{bn: bn}, maxBytes); err != nil {
 		return nil, err
 	}
 	return bn, nil
@@ -47,8 +53,8 @@ func ReadXMLBIF(r io.Reader) (*models.BayesianNetwork, error) {
 
 // readXMLBIFWith is the testable implementation of ReadXMLBIF. Accepts a
 // bnBuilder interface for mock injection.
-func readXMLBIFWith(r io.Reader, builder bnBuilder) error {
-	data, err := io.ReadAll(r)
+func readXMLBIFWith(r io.Reader, builder bnBuilder, maxBytes int) error {
+	data, err := readLimitedN(r, maxBytes)
 	if err != nil {
 		return fmt.Errorf("readwrite: error reading XMLBIF: %w", err)
 	}
@@ -106,9 +112,9 @@ func readXMLBIFWith(r io.Reader, builder bnBuilder) error {
 			}
 		}
 
-		numParentConfigs := 1
-		for _, ec := range evidenceCard {
-			numParentConfigs *= ec
+		numParentConfigs, err := safeParentConfigs(evidenceCard)
+		if err != nil {
+			return fmt.Errorf("readwrite: XMLBIF definition for %q: %w", child, err)
 		}
 
 		// Parse table values.

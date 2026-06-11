@@ -6,9 +6,15 @@ import (
 )
 
 // BrownianMotion generates standard Brownian motion paths.
-// T is the final time, n is the number of time steps, nPaths is the number of
-// independent paths, and seed controls the random number generator.
+// Total allocation is capped at MaxSimulationElements. Use BrownianMotionWithLimit
+// for larger simulations.
 func BrownianMotion(T float64, n, nPaths int, seed int64) *SDEResult {
+	return BrownianMotionWithLimit(T, n, nPaths, seed, MaxSimulationElements)
+}
+
+// BrownianMotionWithLimit is like BrownianMotion but accepts a custom maximum
+// total element count.
+func BrownianMotionWithLimit(T float64, n, nPaths int, seed int64, maxElements int) *SDEResult {
 	if T <= 0 {
 		panic("scigo: BrownianMotion T must be positive")
 	}
@@ -18,6 +24,7 @@ func BrownianMotion(T float64, n, nPaths int, seed int64) *SDEResult {
 	if nPaths <= 0 {
 		panic("scigo: BrownianMotion nPaths must be positive")
 	}
+	checkSimulationSize(nPaths, n+1, maxElements)
 
 	dt := T / float64(n)
 	sqrtDt := math.Sqrt(dt)
@@ -41,14 +48,16 @@ func BrownianMotion(T float64, n, nPaths int, seed int64) *SDEResult {
 	return &SDEResult{T: tVals, X: paths}
 }
 
-// GeometricBrownianMotion generates paths of the process
-//
-//	dS = mu * S * dt + sigma * S * dW
-//
-// with initial value S0. The exact solution is used:
-//
-//	S(t) = S0 * exp((mu - 0.5*sigma^2)*t + sigma*W(t))
+// GeometricBrownianMotion generates paths of dS = mu*S*dt + sigma*S*dW.
+// Total allocation is capped at MaxSimulationElements. Use
+// GeometricBrownianMotionWithLimit for larger simulations.
 func GeometricBrownianMotion(S0, mu, sigma, T float64, n, nPaths int, seed int64) *SDEResult {
+	return GeometricBrownianMotionWithLimit(S0, mu, sigma, T, n, nPaths, seed, MaxSimulationElements)
+}
+
+// GeometricBrownianMotionWithLimit is like GeometricBrownianMotion but accepts
+// a custom maximum total element count.
+func GeometricBrownianMotionWithLimit(S0, mu, sigma, T float64, n, nPaths int, seed int64, maxElements int) *SDEResult {
 	if T <= 0 {
 		panic("scigo: GeometricBrownianMotion T must be positive")
 	}
@@ -58,6 +67,7 @@ func GeometricBrownianMotion(S0, mu, sigma, T float64, n, nPaths int, seed int64
 	if nPaths <= 0 {
 		panic("scigo: GeometricBrownianMotion nPaths must be positive")
 	}
+	checkSimulationSize(nPaths, n+1, maxElements)
 
 	dt := T / float64(n)
 	sqrtDt := math.Sqrt(dt)
@@ -83,12 +93,16 @@ func GeometricBrownianMotion(S0, mu, sigma, T float64, n, nPaths int, seed int64
 	return &SDEResult{T: tVals, X: paths}
 }
 
-// OrnsteinUhlenbeck generates paths of the Ornstein-Uhlenbeck process
-//
-//	dX = theta * (mu - X) * dt + sigma * dW
-//
-// with initial value x0. Uses the exact discretization.
+// OrnsteinUhlenbeck generates paths of dX = theta*(mu-X)*dt + sigma*dW.
+// Total allocation is capped at MaxSimulationElements. Use
+// OrnsteinUhlenbeckWithLimit for larger simulations.
 func OrnsteinUhlenbeck(x0, theta, mu, sigma, T float64, n, nPaths int, seed int64) *SDEResult {
+	return OrnsteinUhlenbeckWithLimit(x0, theta, mu, sigma, T, n, nPaths, seed, MaxSimulationElements)
+}
+
+// OrnsteinUhlenbeckWithLimit is like OrnsteinUhlenbeck but accepts a custom
+// maximum total element count.
+func OrnsteinUhlenbeckWithLimit(x0, theta, mu, sigma, T float64, n, nPaths int, seed int64, maxElements int) *SDEResult {
 	if T <= 0 {
 		panic("scigo: OrnsteinUhlenbeck T must be positive")
 	}
@@ -98,6 +112,7 @@ func OrnsteinUhlenbeck(x0, theta, mu, sigma, T float64, n, nPaths int, seed int6
 	if nPaths <= 0 {
 		panic("scigo: OrnsteinUhlenbeck nPaths must be positive")
 	}
+	checkSimulationSize(nPaths, n+1, maxElements)
 
 	dt := T / float64(n)
 	expTheta := math.Exp(-theta * dt)
@@ -129,15 +144,22 @@ func OrnsteinUhlenbeck(x0, theta, mu, sigma, T float64, n, nPaths int, seed int6
 }
 
 // BrownianBridge generates a Brownian bridge from startVal at time 0 to endVal at time T.
-// The bridge has n time steps. seed controls the random number generator.
-// Returns a slice of length n+1 containing the bridge values.
+// Total allocation is capped at MaxSimulationElements. Use BrownianBridgeWithLimit
+// for larger simulations.
 func BrownianBridge(T float64, n int, startVal, endVal float64, seed int64) []float64 {
+	return BrownianBridgeWithLimit(T, n, startVal, endVal, seed, MaxSimulationElements)
+}
+
+// BrownianBridgeWithLimit is like BrownianBridge but accepts a custom maximum
+// total element count.
+func BrownianBridgeWithLimit(T float64, n int, startVal, endVal float64, seed int64, maxElements int) []float64 {
 	if T <= 0 {
 		panic("scigo: BrownianBridge T must be positive")
 	}
 	if n <= 0 {
 		panic("scigo: BrownianBridge n must be positive")
 	}
+	checkSimulationSize(1, n+1, maxElements)
 
 	dt := T / float64(n)
 	sqrtDt := math.Sqrt(dt)

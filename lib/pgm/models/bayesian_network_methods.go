@@ -360,6 +360,10 @@ func (bn *BayesianNetwork) GetFactorizedProduct() ([]*factors.DiscreteFactor, er
 
 // Save writes the BayesianNetwork to a BIF file.
 func (bn *BayesianNetwork) Save(filename string) error {
+	filename, err := safePath(filename)
+	if err != nil {
+		return err
+	}
 	f, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("models: Save: %w", err)
@@ -456,6 +460,10 @@ func bifDecomposePC(pc int, evidence []string, evidenceCard []int, bn *BayesianN
 
 // LoadBayesianNetwork reads a BIF file and returns a new BayesianNetwork.
 func LoadBayesianNetwork(filename string) (*BayesianNetwork, error) {
+	filename, err := safePath(filename)
+	if err != nil {
+		return nil, err
+	}
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("models: Load: %w", err)

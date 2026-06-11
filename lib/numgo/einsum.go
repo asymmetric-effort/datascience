@@ -238,7 +238,7 @@ func einsumGeneric(parsed *einsumParsed, operands []*NDArray, labelSize map[byte
 		outShape = []int{}
 	}
 
-	outSize := product(outShape)
+	outSize := productUnsafe(outShape)
 	if len(outShape) == 0 {
 		outSize = 1
 	}

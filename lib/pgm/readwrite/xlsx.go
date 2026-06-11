@@ -10,14 +10,14 @@ import (
 // XLSX support requires third-party ZIP/XML parsing libraries and is not yet
 // implemented. Use JSON or CSV formats instead.
 func ReadXLSX(filename string) (*models.BayesianNetwork, error) {
-	return nil, fmt.Errorf("readwrite: XLSX read not implemented for %q: "+
-		"XLSX requires third-party ZIP/XML parsing; use JSON or CSV instead", filename)
+	return nil, fmt.Errorf("readwrite: XLSX read not implemented: " +
+		"XLSX requires third-party ZIP/XML parsing; use JSON or CSV instead")
 }
 
 // WriteXLSX writes a BayesianNetwork to an XLSX file.
 // XLSX support requires third-party ZIP/XML parsing libraries and is not yet
 // implemented. Use JSON or CSV formats instead.
 func WriteXLSX(filename string, bn *models.BayesianNetwork) error {
-	return fmt.Errorf("readwrite: XLSX write not implemented for %q: "+
-		"XLSX requires third-party ZIP/XML parsing; use JSON or CSV instead", filename)
+	return fmt.Errorf("readwrite: XLSX write not implemented: " +
+		"XLSX requires third-party ZIP/XML parsing; use JSON or CSV instead")
 }

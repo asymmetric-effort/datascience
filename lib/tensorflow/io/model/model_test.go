@@ -1,9 +1,11 @@
 package model
 
 import (
+	"encoding/binary"
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -275,5 +277,106 @@ func TestSaveWeightsEmpty(t *testing.T) {
 	}
 	if len(loaded) != 0 {
 		t.Errorf("expected empty weights, got %d", len(loaded))
+	}
+}
+
+func TestLoadWeightsCraftedCountRejectsOversizedCount(t *testing.T) {
+	// Craft a weights file where the count header claims far more elements
+	// than the file actually contains. This must return an error, not OOM.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.bin")
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Write a count of 1 billion (would need ~8GB) but file is only 16 bytes.
+	var count uint64 = 1_000_000_000
+	binary.Write(f, binary.LittleEndian, count)
+	binary.Write(f, binary.LittleEndian, float64(1.0)) // one real weight
+	f.Close()
+
+	_, err = LoadWeights(path)
+	if err == nil {
+		t.Fatal("LoadWeights should reject file where count exceeds file capacity")
+	}
+}
+
+func TestLoadWeightsValidCountAtBoundary(t *testing.T) {
+	// A file with count=2 and exactly 2 float64s should load fine.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ok.bin")
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var count uint64 = 2
+	binary.Write(f, binary.LittleEndian, count)
+	binary.Write(f, binary.LittleEndian, float64(3.14))
+	binary.Write(f, binary.LittleEndian, float64(2.72))
+	f.Close()
+
+	weights, err := LoadWeights(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(weights) != 2 {
+		t.Fatalf("expected 2 weights, got %d", len(weights))
+	}
+	if weights[0] != 3.14 || weights[1] != 2.72 {
+		t.Errorf("weights = %v, want [3.14, 2.72]", weights)
+	}
+}
+
+func TestPathTraversalRejected(t *testing.T) {
+	cases := []struct {
+		name string
+		fn   func() error
+	}{
+		{"SaveConfig", func() error { return SaveConfig(&ModelConfig{}, "../../evil.json") }},
+		{"LoadConfig", func() error { _, err := LoadConfig("../../evil.json"); return err }},
+		{"SaveWeights", func() error { return SaveWeights(nil, "../../evil.bin") }},
+		{"LoadWeights", func() error { _, err := LoadWeights("../../evil.bin"); return err }},
+		{"SaveModel", func() error { return SaveModel(&ModelConfig{}, nil, "../../evil") }},
+		{"LoadModel", func() error { _, _, err := LoadModel("../../evil"); return err }},
+		{"SaveCheckpoint", func() error {
+			return SaveCheckpoint(&Checkpoint{Epoch: 1}, nil, "../../evil")
+		}},
+		{"LoadCheckpoint", func() error { _, err := LoadCheckpoint("../../evil.json"); return err }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.fn()
+			if err == nil {
+				t.Fatal("expected error for traversal path")
+			}
+			if !strings.Contains(err.Error(), "directory traversal") {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestValidPathsAccepted(t *testing.T) {
+	dir := t.TempDir()
+
+	// SaveModel with a valid path should succeed.
+	config := &ModelConfig{Name: "test", Layers: []LayerConfig{{Type: "dense"}}}
+	err := SaveModel(config, []float64{1.0, 2.0}, dir)
+	if err != nil {
+		t.Fatalf("SaveModel to valid path failed: %v", err)
+	}
+
+	// LoadModel should succeed.
+	loaded, weights, err := LoadModel(dir)
+	if err != nil {
+		t.Fatalf("LoadModel from valid path failed: %v", err)
+	}
+	if loaded.Name != "test" {
+		t.Errorf("loaded config name = %q, want %q", loaded.Name, "test")
+	}
+	if len(weights) != 2 {
+		t.Errorf("loaded %d weights, want 2", len(weights))
 	}
 }

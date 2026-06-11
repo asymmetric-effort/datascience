@@ -2,6 +2,7 @@ package numgo
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -26,8 +27,29 @@ func computeStrides(shape []int) []int {
 	return strides
 }
 
-// product returns the product of ints.
+// product returns the product of ints with overflow and negative dimension checks.
+// It panics if any dimension is negative or if the product overflows int.
+// Zero dimensions are allowed (they produce a zero-size array).
 func product(vals []int) int {
+	p := 1
+	for _, v := range vals {
+		if v < 0 {
+			panic(fmt.Sprintf("numgo: shape dimensions must be non-negative, got %d", v))
+		}
+		if v == 0 {
+			return 0
+		}
+		if p > math.MaxInt/v {
+			panic(fmt.Sprintf("numgo: shape product overflows int: %v", vals))
+		}
+		p *= v
+	}
+	return p
+}
+
+// productUnsafe returns the product of ints without overflow or validation checks.
+// Use only when dimensions have already been validated (e.g., internal reshapes).
+func productUnsafe(vals []int) int {
 	p := 1
 	for _, v := range vals {
 		p *= v

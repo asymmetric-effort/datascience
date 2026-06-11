@@ -155,7 +155,7 @@ func Meshgrid(xi ...*NDArray) []*NDArray {
 	// We use "ij" indexing: shape = (sizes[0], sizes[1], ..., sizes[n-1]).
 	outShape := make([]int, n)
 	copy(outShape, sizes)
-	totalSize := product(outShape)
+	totalSize := productUnsafe(outShape)
 	outStrides := computeStrides(outShape)
 
 	result := make([]*NDArray, n)

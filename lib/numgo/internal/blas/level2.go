@@ -1,6 +1,6 @@
 package blas
 
-// Dgemv computes a general matrix-vector product.
+// Dgemv computes a general matrix-vector product with bounds validation.
 //
 //	If trans == false:  y = alpha * A * x + beta * y
 //	If trans == true:   y = alpha * A^T * x + beta * y
@@ -8,6 +8,25 @@ package blas
 // A is m-by-n stored in row-major order with leading dimension lda.
 // x has length n (or m if transposed), y has length m (or n if transposed).
 func Dgemv(trans bool, m, n int, alpha float64, a []float64, lda int,
+	x []float64, incx int, beta float64, y []float64, incy int) {
+
+	if m <= 0 || n <= 0 {
+		return
+	}
+	validateMatrix("Dgemv a", a, m, n, lda)
+	if !trans {
+		validateVector("Dgemv x", x, n, incx)
+		validateVector("Dgemv y", y, m, incy)
+	} else {
+		validateVector("Dgemv x", x, m, incx)
+		validateVector("Dgemv y", y, n, incy)
+	}
+	DgemvUnsafe(trans, m, n, alpha, a, lda, x, incx, beta, y, incy)
+}
+
+// DgemvUnsafe computes a general matrix-vector product without bounds checks.
+// Use only when slice lengths have already been validated.
+func DgemvUnsafe(trans bool, m, n int, alpha float64, a []float64, lda int,
 	x []float64, incx int, beta float64, y []float64, incy int) {
 
 	if m <= 0 || n <= 0 {
@@ -79,7 +98,7 @@ func Dgemv(trans bool, m, n int, alpha float64, a []float64, lda int,
 	}
 }
 
-// Dtrsv solves a triangular system of equations: A*x = b  or  A^T*x = b,
+// Dtrsv solves a triangular system of equations with bounds validation: A*x = b  or  A^T*x = b,
 // overwriting x with the solution.
 //
 // Parameters:
@@ -93,6 +112,17 @@ func Dgemv(trans bool, m, n int, alpha float64, a []float64, lda int,
 //	x: on entry the right-hand side b, on exit the solution
 //	incx: stride for x
 func Dtrsv(uplo, trans, diag byte, n int, a []float64, lda int, x []float64, incx int) {
+	if n <= 0 {
+		return
+	}
+	validateMatrix("Dtrsv a", a, n, n, lda)
+	validateVector("Dtrsv x", x, n, incx)
+	DtrsvUnsafe(uplo, trans, diag, n, a, lda, x, incx)
+}
+
+// DtrsvUnsafe solves a triangular system of equations without bounds checks.
+// Use only when slice lengths have already been validated.
+func DtrsvUnsafe(uplo, trans, diag byte, n int, a []float64, lda int, x []float64, incx int) {
 	if n <= 0 {
 		return
 	}
