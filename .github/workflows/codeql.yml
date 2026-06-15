@@ -24,17 +24,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/checkout@ff2533dd569d39bb4d8b09d294b3ed595bf3eefb # v1.0.9
 
       - name: Initialize CodeQL
-        uses: asymmetric-effort/actions/actions/codeql-init@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/codeql-init@ff2533dd569d39bb4d8b09d294b3ed595bf3eefb # v1.0.9
         with:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: asymmetric-effort/actions/actions/codeql-autobuild@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/codeql-autobuild@ff2533dd569d39bb4d8b09d294b3ed595bf3eefb # v1.0.9
 
       - name: Perform CodeQL Analysis
-        uses: asymmetric-effort/actions/actions/codeql-analyze@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/codeql-analyze@ff2533dd569d39bb4d8b09d294b3ed595bf3eefb # v1.0.9
         with:
           category: "/language:${{ matrix.language }}"
