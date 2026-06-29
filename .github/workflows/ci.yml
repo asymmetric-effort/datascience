@@ -105,7 +105,7 @@ jobs:
         run: npx vite build
 
       - name: Upload website artifact
-        uses: asymmetric-effort/actions/actions/upload-pages-artifact@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/upload-pages-artifact@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
         with:
           path: website/dist
 
