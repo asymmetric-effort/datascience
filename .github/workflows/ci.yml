@@ -23,7 +23,7 @@ jobs:
         uses: asymmetric-effort/actions/actions/checkout@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
 
       - name: Set up Go
-        uses: asymmetric-effort/actions/actions/setup-go@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-go@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
         with:
           go-version-file: go.mod
 
@@ -137,7 +137,7 @@ jobs:
         uses: asymmetric-effort/actions/actions/checkout@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
 
       - name: Set up Go
-        uses: asymmetric-effort/actions/actions/setup-go@488ac7a4c06233353a7b7e02467f731f9ac19ddd # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-go@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
         with:
           go-version-file: go.mod
 
