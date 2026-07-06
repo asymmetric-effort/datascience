@@ -7,14 +7,14 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # Stage 1: Lint and Test (must pass before anything else)
+  # Stage 1: Lint and Test
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
@@ -86,6 +86,7 @@ jobs:
   build-website:
     name: Build Website
     needs: lint-and-test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -104,33 +105,112 @@ jobs:
         working-directory: website
         run: npx vite build
 
-      - name: Upload website artifact
-        uses: asymmetric-effort/actions/actions/upload-pages-artifact@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+      - name: Upload build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          path: website/dist
+          name: website-dist
+          path: website/dist/
+          retention-days: 1
 
-  # Stage 3: Deploy website to GitHub Pages (main branch only)
-  deploy-website:
-    name: Deploy Website
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  # Stage 3: Deploy to staging (blue-green)
+  deploy-staging:
+    name: Deploy to Staging
     needs: build-website
-    permissions:
-      pages: write
-      id-token: write
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: asymmetric-effort/actions/actions/deploy-pages@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+      - name: Checkout gh-pages
+        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        with:
+          ref: gh-pages
+          path: gh-pages
 
-  # Stage 4: Post-deployment verification
-  verify:
-    name: Post-Deployment Verification
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: deploy-website
+      - name: Download build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: website-dist
+          path: new-build
+
+      - name: Deploy to /staging/
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          cd gh-pages
+          rm -rf staging
+          cp -r ../new-build staging
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes" || git commit -m "Deploy staging from ${COMMIT_SHA}"
+          git push origin gh-pages
+
+  # Stage 4: Post-deployment verification against staging
+  verify-staging:
+    name: Verify Staging
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for staging propagation
+        run: |
+          echo "Waiting for staging deployment to propagate..."
+          for i in $(seq 1 30); do
+            CACHEBUST="?cb=$(date +%s)-$i"
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://datascience.asymmetric-effort.com/staging/${CACHEBUST}")
+            HTML=$(curl -s "https://datascience.asymmetric-effort.com/staging/${CACHEBUST}")
+            HAS_ROOT=$(echo "$HTML" | grep -c 'id="root"' || true)
+            if [ "$STATUS" = "200" ] && [ "$HAS_ROOT" -gt 0 ]; then
+              echo "Staging confirmed after ${i}0s"
+              exit 0
+            fi
+            echo "Attempt $i/30: status=$STATUS has_root=$HAS_ROOT"
+            sleep 10
+          done
+          echo "ERROR: staging did not converge after 5 minutes"
+          exit 1
+
+      - name: Verify staging content
+        run: |
+          body=$(curl -s "https://datascience.asymmetric-effort.com/staging/?cb=$(date +%s)")
+          echo "$body" | grep -q '<div id="root">' || { echo "Missing root element"; exit 1; }
+          echo "Staging content verified"
+
+  # Stage 5: Promote staging to production
+  promote:
+    name: Promote to Production
+    needs: verify-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy staging to root
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          cd gh-pages
+          # Preserve CNAME and .nojekyll
+          cp CNAME /tmp/CNAME.bak 2>/dev/null || true
+          cp .nojekyll /tmp/.nojekyll.bak 2>/dev/null || true
+          # Remove old root content (except staging/, .git/, CNAME, .nojekyll)
+          find . -maxdepth 1 ! -name '.' ! -name '.git' ! -name 'staging' ! -name 'CNAME' ! -name '.nojekyll' -exec rm -rf {} +
+          # Copy staging content to root
+          cp -r staging/* .
+          # Restore CNAME and .nojekyll
+          cp /tmp/CNAME.bak CNAME 2>/dev/null || echo "datascience.asymmetric-effort.com" > CNAME
+          cp /tmp/.nojekyll.bak .nojekyll 2>/dev/null || touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes" || git commit -m "Promote staging to production from ${COMMIT_SHA}"
+          git push origin gh-pages
+
+  # Stage 6: Verify production
+  verify-production:
+    name: Verify Production
+    needs: promote
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -150,47 +230,51 @@ jobs:
           go get github.com/asymmetric-effort/datascience@${COMMIT_SHA}
           echo "Go library installs successfully"
 
-      - name: Wait for deployment propagation
-        run: sleep 30
-
-      - name: Verify website is live
+      - name: Wait for production propagation
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" https://datascience.asymmetric-effort.com/)
-          echo "HTTP status: $status"
-          if [ "$status" -ne 200 ]; then
-            echo "Website returned non-200 status"
-            exit 1
-          fi
+          echo "Waiting for production deployment to propagate..."
+          for i in $(seq 1 30); do
+            CACHEBUST="?cb=$(date +%s)-$i"
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://datascience.asymmetric-effort.com/${CACHEBUST}")
+            HTML=$(curl -s "https://datascience.asymmetric-effort.com/${CACHEBUST}")
+            HAS_ROOT=$(echo "$HTML" | grep -c 'id="root"' || true)
+            if [ "$STATUS" = "200" ] && [ "$HAS_ROOT" -gt 0 ]; then
+              echo "Production confirmed after ${i}0s"
+              break
+            fi
+            echo "Attempt $i/30: status=$STATUS has_root=$HAS_ROOT"
+            sleep 10
+          done
 
       - name: Verify website content
         run: |
-          body=$(curl -s https://datascience.asymmetric-effort.com/)
+          body=$(curl -s "https://datascience.asymmetric-effort.com/?cb=$(date +%s)")
           echo "$body" | grep -q '<div id="root">' || { echo "Missing root element"; exit 1; }
           echo "Website content verified"
 
       - name: Verify CNAME
         run: |
-          body=$(curl -s https://datascience.asymmetric-effort.com/CNAME)
+          body=$(curl -s "https://datascience.asymmetric-effort.com/CNAME?cb=$(date +%s)")
           echo "$body" | grep -q "datascience.asymmetric-effort.com" || { echo "CNAME mismatch"; exit 1; }
           echo "CNAME verified"
 
       - name: Verify robots.txt
         run: |
-          body=$(curl -s https://datascience.asymmetric-effort.com/robots.txt)
+          body=$(curl -s "https://datascience.asymmetric-effort.com/robots.txt?cb=$(date +%s)")
           echo "$body" | grep -q "Sitemap:" || { echo "Missing sitemap in robots.txt"; exit 1; }
           echo "robots.txt verified"
 
       - name: Verify sitemap.xml
         run: |
-          body=$(curl -s https://datascience.asymmetric-effort.com/sitemap.xml)
+          body=$(curl -s "https://datascience.asymmetric-effort.com/sitemap.xml?cb=$(date +%s)")
           echo "$body" | grep -q "datascience.asymmetric-effort.com" || { echo "Sitemap missing URLs"; exit 1; }
           echo "sitemap.xml verified"
 
-  # Stage 5: Index on Go module proxy (tagged versions only)
+  # Stage 7: Index on Go module proxy (tagged versions only)
   index-go-proxy:
     name: Index Go Module
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: verify
+    needs: verify-production
     runs-on: ubuntu-latest
     steps:
       - name: Poke Go module proxy
