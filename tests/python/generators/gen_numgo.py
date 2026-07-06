@@ -385,7 +385,7 @@ def generate():
     # Eig (symmetric for reliable real eigenvalues)
     A_eig = np.array([[2.0, 1.0], [1.0, 3.0]])
     eigvals, _ = np.linalg.eig(A_eig)
-    eigvals_sorted = np.sort(eigvals).tolist()
+    eigvals_sorted = np.sort(np.real(eigvals)).tolist()
     test_cases.append({
         "name": "eig_symmetric_2x2",
         "category": "linalg",
@@ -399,7 +399,7 @@ def generate():
         "name": "eig_symmetric_3x3",
         "category": "linalg",
         "input": {"a": A_eig3.tolist()},
-        "expected": {"eigenvalues_sorted": np.sort(eigvals3).tolist()}
+        "expected": {"eigenvalues_sorted": np.sort(np.real(eigvals3)).tolist()}
     })
 
     # Cholesky
