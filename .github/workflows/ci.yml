@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node
         uses: asymmetric-effort/actions/actions/setup-node@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
         with:
-          node-version: 24
+          node-version: "24.2.0"
 
       - name: Set up Python
         uses: asymmetric-effort/actions/actions/setup-python@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
@@ -94,7 +94,7 @@ jobs:
       - name: Set up Node
         uses: asymmetric-effort/actions/actions/setup-node@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
         with:
-          node-version: 24
+          node-version: "24.2.0"
 
       - name: Install dependencies
         working-directory: website
