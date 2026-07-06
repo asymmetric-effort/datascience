@@ -34,8 +34,8 @@ export function Docs() {
           cross-compiles trivially, and deploys without runtime dependencies.
         </p>
         <p>
-          The current release is <strong>v0.0.37</strong> with approximately 5,000 tests and 392 cross-validation
-          fixtures covering inference, learning, sampling, serialization, and cross-validation across the library.
+          The library includes approximately 5,000 tests and 392 cross-validation
+          fixtures covering inference, learning, sampling, serialization, and cross-validation across all packages.
         </p>
 
         <h3>Key Capabilities</h3>

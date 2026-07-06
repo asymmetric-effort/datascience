@@ -252,6 +252,24 @@ jobs:
           echo "$body" | grep -q '<div id="root">' || { echo "Missing root element"; exit 1; }
           echo "Website content verified"
 
+      - name: Verify footer version matches deployed version
+        run: |
+          EXPECTED=$(cat website/package.json | grep '"version"' | head -1 | sed 's/.*: "//;s/".*//')
+          echo "Expected version: v${EXPECTED}"
+          HTML=$(curl -s "https://datascience.asymmetric-effort.com/?cb=$(date +%s)")
+          JS_FILE=$(echo "$HTML" | grep -oP 'assets/index-[^"]+\.js' | head -1)
+          if [ -z "$JS_FILE" ]; then
+            echo "ERROR: Could not find JS bundle in HTML"
+            exit 1
+          fi
+          JS=$(curl -s "https://datascience.asymmetric-effort.com/${JS_FILE}?cb=$(date +%s)")
+          if echo "$JS" | grep -q "v${EXPECTED}"; then
+            echo "Footer version v${EXPECTED} verified in deployed bundle"
+          else
+            echo "ERROR: Footer version v${EXPECTED} not found in deployed JS bundle"
+            exit 1
+          fi
+
       - name: Verify CNAME
         run: |
           body=$(curl -s "https://datascience.asymmetric-effort.com/CNAME?cb=$(date +%s)")

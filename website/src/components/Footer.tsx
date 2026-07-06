@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer class="footer">
       <div class="footer-inner">
-        <span>v0.0.38 | MIT License &copy; 2026 Asymmetric Effort, LLC</span>
+        <span>v0.1.3 | MIT License &copy; 2026 Asymmetric Effort, LLC</span>
         <div class="footer-links">
           <a href="https://github.com/asymmetric-effort/datascience" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="https://github.com/asymmetric-effort/datascience/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security</a>

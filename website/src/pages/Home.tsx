@@ -24,9 +24,8 @@ export function Home() {
           with near-zero dependencies.
         </p>
         <div class="badges">
-          <span class="badge">v0.0.37</span>
-          <span class="badge">Near-Zero Dependencies</span>
-          <span class="badge">Go 1.21+</span>
+          <span class="badge">Zero Dependencies</span>
+          <span class="badge">Go 1.26+</span>
           <span class="badge">MIT License</span>
           <span class="badge">~5,000 Tests</span>
           <span class="badge">392 Cross-Validation Fixtures</span>
