@@ -1,6 +1,5 @@
 {
   "generator": "numgo",
-  "numpy_version": "2.4.6",
   "test_cases": [
     {
       "category": "creation",

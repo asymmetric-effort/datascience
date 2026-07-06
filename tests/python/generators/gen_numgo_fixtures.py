@@ -28,7 +28,6 @@ def main():
     cases = generate()
     data = {
         "generator": "numgo",
-        "numpy_version": np.__version__,
         "test_cases": cases,
     }
 
