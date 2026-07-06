@@ -20,20 +20,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
       - name: Set up Go
-        uses: asymmetric-effort/actions/actions/setup-go@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-go@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
         with:
           go-version-file: go.mod
 
       - name: Set up Node
-        uses: asymmetric-effort/actions/actions/setup-node@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-node@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
         with:
           node-version: "24.2.0"
 
       - name: Set up Python
-        uses: asymmetric-effort/actions/actions/setup-python@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-python@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
         with:
           python-version: "3.12"
 
@@ -89,10 +89,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
       - name: Set up Node
-        uses: asymmetric-effort/actions/actions/setup-node@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-node@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
         with:
           node-version: "24.2.0"
 
@@ -105,7 +105,7 @@ jobs:
         run: npx vite build
 
       - name: Upload website artifact
-        uses: asymmetric-effort/actions/actions/upload-pages-artifact@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/upload-pages-artifact@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
         with:
           path: website/dist
 
@@ -124,7 +124,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: asymmetric-effort/actions/actions/deploy-pages@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/deploy-pages@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
   # Stage 4: Post-deployment verification
   verify:
@@ -134,10 +134,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
       - name: Set up Go
-        uses: asymmetric-effort/actions/actions/setup-go@940ebd094488ead7765982278cfda3653fdbce48 # v1.0.9
+        uses: asymmetric-effort/actions/actions/setup-go@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
         with:
           go-version-file: go.mod
 
