@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/checkout@db7bf0da04b1904428ef5244fd0a9c97cb62d88e # v1.0.10-dev
 
       - name: Set up Go
         uses: asymmetric-effort/actions/actions/setup-go@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/checkout@db7bf0da04b1904428ef5244fd0a9c97cb62d88e # v1.0.10-dev
 
       - name: Set up Node
         uses: asymmetric-effort/actions/actions/setup-node@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gh-pages
-        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/checkout@db7bf0da04b1904428ef5244fd0a9c97cb62d88e # v1.0.10-dev
         with:
           ref: gh-pages
           path: gh-pages
@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gh-pages
-        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/checkout@db7bf0da04b1904428ef5244fd0a9c97cb62d88e # v1.0.10-dev
         with:
           ref: gh-pages
           path: gh-pages
@@ -214,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/checkout@db7bf0da04b1904428ef5244fd0a9c97cb62d88e # v1.0.10-dev
 
       - name: Set up Go
         uses: asymmetric-effort/actions/actions/setup-go@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
