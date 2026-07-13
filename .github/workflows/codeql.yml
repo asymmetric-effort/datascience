@@ -32,7 +32,7 @@ jobs:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: asymmetric-effort/actions/actions/codeql-autobuild@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/codeql-autobuild@db7bf0da04b1904428ef5244fd0a9c97cb62d88e # v1.0.10-dev
 
       - name: Perform CodeQL Analysis
         uses: asymmetric-effort/actions/actions/codeql-analyze@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
