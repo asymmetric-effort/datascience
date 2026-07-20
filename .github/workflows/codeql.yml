@@ -27,7 +27,7 @@ jobs:
         uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
       - name: Initialize CodeQL
-        uses: asymmetric-effort/actions/actions/codeql-init@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/codeql-init@b9346f850c6159e6c7d5121f1b54bb378b8220c7 # v1.0.10-dev
         with:
           languages: ${{ matrix.language }}
 
