@@ -35,6 +35,6 @@ jobs:
         uses: asymmetric-effort/actions/actions/codeql-autobuild@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
       - name: Perform CodeQL Analysis
-        uses: asymmetric-effort/actions/actions/codeql-analyze@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/codeql-analyze@b9346f850c6159e6c7d5121f1b54bb378b8220c7 # v1.0.10-dev
         with:
           category: "/language:${{ matrix.language }}"
