@@ -33,7 +33,7 @@ jobs:
           node-version: "24.2.0"
 
       - name: Set up Python
-        uses: asymmetric-effort/actions/actions/setup-python@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/setup-python@b9346f850c6159e6c7d5121f1b54bb378b8220c7 # v1.0.10-dev
         with:
           python-version: "3.12"
 
