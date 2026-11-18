@@ -28,7 +28,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Set up Node
-        uses: asymmetric-effort/actions/actions/setup-node@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/setup-node@b9346f850c6159e6c7d5121f1b54bb378b8220c7 # v1.0.10-dev
         with:
           node-version: "24.2.0"
 
@@ -93,7 +93,7 @@ jobs:
         uses: asymmetric-effort/actions/actions/checkout@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
 
       - name: Set up Node
-        uses: asymmetric-effort/actions/actions/setup-node@e565630fb74add31f164fc517eff80906801e8aa # v1.0.10-dev
+        uses: asymmetric-effort/actions/actions/setup-node@b9346f850c6159e6c7d5121f1b54bb378b8220c7 # v1.0.10-dev
         with:
           node-version: "24.2.0"
 
