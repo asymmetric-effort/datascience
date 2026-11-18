@@ -7,8 +7,8 @@ export function Nav() {
     <nav class="nav">
       <div class="nav-inner">
         <Link to="/" class="nav-brand">
-          <img src="/docs/img/logo.png" alt="datascience logo" width="28" height="28" />
-          datascience
+          <img src="/docs/img/logo.png" alt="datascience.asymmetric-effort.com logo" width="28" height="28" />
+          datascience.asymmetric-effort.com
         </Link>
         <div class="nav-links">
           <Link to="/" class={pathname === "/" ? "active" : ""}>Home</Link>

@@ -3,7 +3,7 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Docs() {
   useHead({
-    title: "Documentation — datascience",
+    title: "Documentation — datascience.asymmetric-effort.com",
     description: "Comprehensive documentation for datascience, a pure Go library for data science and machine learning. PGMs, TensorFlow, BLAS, financial modeling, and more.",
     canonical: "https://datascience.asymmetric-effort.com/#/docs",
   });

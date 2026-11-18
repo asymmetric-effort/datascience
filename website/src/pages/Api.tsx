@@ -3,7 +3,7 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Api() {
   useHead({
-    title: "API Reference — datascience",
+    title: "API Reference — datascience.asymmetric-effort.com",
     description: "Complete Go API reference for datascience: PGM models, factors, inference, sampling, learning, TensorFlow, BLAS, financial modeling, and library packages.",
     canonical: "https://datascience.asymmetric-effort.com/#/api",
   });
