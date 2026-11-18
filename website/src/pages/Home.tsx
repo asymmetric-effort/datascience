@@ -2,11 +2,11 @@ import { createElement, useHead, Link } from "@asymmetric-effort/specifyjs";
 
 export function Home() {
   useHead({
-    title: "datascience — Data Science and Machine Learning in Go",
+    title: "datascience.asymmetric-effort.com — Data Science and Machine Learning in Go",
     description: "A comprehensive pure Go library for data science and machine learning. PGMs, TensorFlow/deep learning, BLAS, financial modeling, and more.",
     canonical: "https://datascience.asymmetric-effort.com/",
     og: {
-      title: "datascience — Data Science and Machine Learning in Go",
+      title: "datascience.asymmetric-effort.com — Data Science and Machine Learning in Go",
       description: "A comprehensive pure Go library for data science and machine learning.",
       url: "https://datascience.asymmetric-effort.com/",
     },
@@ -15,8 +15,8 @@ export function Home() {
   return (
     <div class="page">
       <section class="hero">
-        <img src="/docs/img/logo.png" alt="datascience logo" class="hero-logo" />
-        <h1>datascience</h1>
+        <img src="/docs/img/logo.png" alt="datascience.asymmetric-effort.com logo" class="hero-logo" />
+        <h1>datascience.asymmetric-effort.com</h1>
         <p class="hero-subtitle">Data Science and Machine Learning in Go</p>
         <p class="hero-description">
           A comprehensive pure Go library for probabilistic graphical models, TensorFlow-compatible

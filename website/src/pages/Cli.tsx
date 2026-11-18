@@ -3,7 +3,7 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Libraries() {
   useHead({
-    title: "Libraries — datascience",
+    title: "Libraries — datascience.asymmetric-effort.com",
     description: "Overview of all library packages in datascience: numgo, scigo, graphgo, tabgo, gpu, pgm, and tensorflow.",
     canonical: "https://datascience.asymmetric-effort.com/#/libraries",
   });

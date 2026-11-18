@@ -3,7 +3,7 @@ import { ScrollLink } from "../components/ScrollLink";
 
 export function Tutorials() {
   useHead({
-    title: "Tutorials — datascience",
+    title: "Tutorials — datascience.asymmetric-effort.com",
     description: "Step-by-step tutorials for building Bayesian networks, inference, structure learning, causal inference, file formats, sampling, advanced models, and internal libraries with datascience.",
     canonical: "https://datascience.asymmetric-effort.com/#/tutorials",
   });
