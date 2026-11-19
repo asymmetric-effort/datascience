@@ -71,12 +71,20 @@ main {
   text-decoration: none;
 }
 
-.nav-brand:hover {
+.nav-brand,
+.nav-brand:hover,
+.nav-brand:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-brand-text {
+  display: inline;
   text-decoration: none;
 }
 
-.brand-highlight {
-  color: var(--primary);
+.nav-brand-text span {
+  text-decoration: none;
 }
 
 .nav-brand img {
