@@ -75,6 +75,10 @@ main {
   text-decoration: none;
 }
 
+.brand-highlight {
+  color: var(--primary);
+}
+
 .nav-brand img {
   height: 28px;
   width: 28px;

@@ -11,7 +11,7 @@ export function Nav() {
       <div class="nav-inner">
         <Link to="/" class="nav-brand" onClick={closeMenu}>
           <img src="/docs/img/logo.png" alt="datascience.asymmetric-effort.com logo" width="28" height="28" />
-          <span class="nav-brand-text">datascience.asymmetric-effort.com</span>
+          <span class="nav-brand-text"><span class="brand-highlight">Data</span>Science</span>
         </Link>
         <button
           class="nav-toggle"
