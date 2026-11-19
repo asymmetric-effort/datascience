@@ -61,30 +61,19 @@ main {
   gap: 2rem;
 }
 
-.nav-brand {
+a.nav-brand,
+a.nav-brand:link,
+a.nav-brand:visited,
+a.nav-brand:hover,
+a.nav-brand:active {
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 20px;
   color: var(--text);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   text-decoration: none;
-}
-
-.nav-brand,
-.nav-brand:hover,
-.nav-brand:visited {
-  text-decoration: none;
-  color: inherit;
-}
-
-.nav-brand-text {
-  display: inline;
-  text-decoration: none;
-}
-
-.nav-brand-text span {
-  text-decoration: none;
+  cursor: pointer;
 }
 
 .nav-brand img {
