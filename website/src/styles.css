@@ -13,12 +13,14 @@
   --code-text: #e2e8f0;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "SF Mono", Monaco, Consolas, monospace;
+  --radius: 8px;
+  --max-width: 960px;
 }
 
-* {
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 html, body {
@@ -37,43 +39,47 @@ html, body {
 
 main {
   flex: 1;
-  max-width: 960px;
+  max-width: var(--max-width);
   margin: 0 auto;
   padding: 32px 24px;
   width: 100%;
 }
 
-/* Navigation */
+/* Navigation — matches SpecifyJS nav-bar pattern */
 .nav {
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border);
 }
 
 .nav-inner {
-  max-width: 960px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 2rem;
+  height: 56px;
+  gap: 32px;
 }
 
-a.nav-brand,
-a.nav-brand:link,
-a.nav-brand:visited,
-a.nav-brand:hover,
-a.nav-brand:active {
-  font-weight: 700;
+.nav-brand {
   font-size: 20px;
+  font-weight: 700;
   color: var(--text);
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.nav-brand:link,
+.nav-brand:visited,
+.nav-brand:hover,
+.nav-brand:active {
+  color: var(--text);
   text-decoration: none;
-  cursor: pointer;
 }
 
 .nav-brand img {
@@ -83,23 +89,52 @@ a.nav-brand:active {
   max-width: 28px;
   border-radius: 4px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .nav-links {
   display: flex;
-  gap: 1.5rem;
+  gap: 8px;
 }
 
 .nav-links a {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  text-decoration: none;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-links a:hover {
+  background: var(--bg-muted);
+  color: var(--text);
   text-decoration: none;
 }
 
-.nav-links a:hover,
 .nav-links a.active {
-  color: var(--primary);
+  background: var(--primary);
+  color: var(--bg);
   text-decoration: none;
+}
+
+/* Hamburger toggle — hidden on desktop */
+.nav-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--text);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  margin-left: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Footer */
@@ -109,7 +144,7 @@ a.nav-brand:active {
 }
 
 .footer-inner {
-  max-width: 960px;
+  max-width: var(--max-width);
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -215,7 +250,7 @@ a.nav-brand:active {
 pre {
   background: var(--code-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 16px;
   overflow-x: auto;
   margin-bottom: 16px;
@@ -269,7 +304,7 @@ tr:hover {
 .feature-card {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 24px;
   transition: border-color 0.2s;
 }
@@ -286,47 +321,28 @@ tr:hover {
   font-size: 14px;
 }
 
-/* Links — exclude nav which has its own styling */
-a:not(.nav-brand):not(.nav-links a) {
+/* Links — no generic a rules; all link colors are class-scoped */
+.section a,
+.page a:not(.nav-brand),
+.hero a,
+.footer-links a {
   color: var(--primary);
 }
 
-a:not(.nav-brand):not(.nav-links a):hover {
+.section a:hover,
+.page a:not(.nav-brand):hover,
+.hero a:hover {
   color: var(--primary-dark);
 }
 
-/* Hamburger toggle — hidden on desktop */
-.nav-toggle {
-  display: none;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-size: 1.25rem;
-  padding: 4px 10px;
-  cursor: pointer;
-  line-height: 1;
-  margin-left: auto;
-}
-
-.nav-toggle:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-/* ---- Tablet (≤768px) ---- */
-@media (max-width: 768px) {
-  .nav-toggle {
-    display: block;
-  }
-
-  .nav-inner {
-    flex-wrap: wrap;
-    padding: 0.75rem 1rem;
-  }
+/* ─── Mobile: < 768px ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .nav { padding: 0 12px; }
+  .nav-inner { gap: 8px; }
+  .nav-toggle { display: flex; }
 
   .nav-brand {
-    font-size: 1rem;
+    font-size: 16px;
     min-width: 0;
   }
 
@@ -339,11 +355,15 @@ a:not(.nav-brand):not(.nav-links a):hover {
   .nav-links {
     display: none;
     flex-direction: column;
-    width: 100%;
-    gap: 0;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border);
-    margin-top: 0.5rem;
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
 
   .nav-links-open {
@@ -351,104 +371,67 @@ a:not(.nav-brand):not(.nav-links a):hover {
   }
 
   .nav-links a {
-    padding: 0.6rem 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 1rem;
-  }
-
-  .hero h1 {
-    font-size: 28px;
-    word-break: break-word;
-    overflow-wrap: break-word;
-  }
-
-  .hero-logo {
-    width: 80px;
-    height: 80px;
-  }
-
-  .hero-subtitle {
+    padding: 12px 20px;
     font-size: 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    border-radius: 0;
   }
 
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
+  .hero { padding: 40px 0 24px; }
+  .hero h1 { font-size: 28px; word-break: break-word; overflow-wrap: break-word; }
+  .hero-subtitle { font-size: 16px; }
+  .hero-logo { width: 80px; height: 80px; }
 
-  pre {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  .features-grid { grid-template-columns: 1fr; gap: 16px; }
 
-  table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  main { padding: 16px 12px; }
+  .section { margin-top: 24px; }
+  .section h2 { font-size: 22px; }
+
+  pre { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .footer-inner { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+
+  .page h1 { font-size: 24px; }
 }
 
-/* ---- Mobile (≤480px) ---- */
-@media (max-width: 480px) {
-  .nav-inner {
-    padding: 0.5rem 0.75rem;
-  }
+/* ─── Tablet: 768px - 1024px ──────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .nav-toggle { display: flex; }
 
-  .nav-brand {
-    font-size: 0.85rem;
-    gap: 0.35rem;
-  }
-
-  .nav-brand img {
-    height: 22px;
-    width: 22px;
-    max-height: 22px;
-    max-width: 22px;
-  }
-
-  main {
-    padding: 16px 12px;
-  }
-
-  .hero {
-    padding: 24px 0;
-  }
-
-  .hero h1 {
-    font-size: 22px;
-  }
-
-  .hero-subtitle {
-    font-size: 14px;
-  }
-
-  .hero-logo {
-    width: 64px;
-    height: 64px;
-  }
-
-  .badges {
-    gap: 6px;
-  }
-
-  .badge {
-    font-size: 11px;
-    padding: 4px 10px;
-  }
-
-  .page h1 {
-    font-size: 24px;
-  }
-
-  .section h2 {
-    font-size: 20px;
-  }
-
-  .footer-inner {
+  .nav-links {
+    display: none;
     flex-direction: column;
-    text-align: center;
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
 
-  .footer-links {
-    justify-content: center;
+  .nav-links-open { display: flex; }
+
+  .nav-links a {
+    padding: 12px 20px;
+    font-size: 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    border-radius: 0;
   }
+
+  .hero h1 { font-size: 36px; }
+  .hero-subtitle { font-size: 18px; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  main { padding: 24px 20px; }
 }
+
+/* ─── Desktop: > 1024px — defaults already cover this ─────────────── */
