@@ -1,6 +1,6 @@
 {
   "name": "datascience-website",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "datascience.asymmetric-effort.com project website",
   "type": "module",
   "scripts": {
