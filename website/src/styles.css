@@ -368,15 +368,15 @@ tr:hover {
 
 /* Links — no generic a rules; all link colors are class-scoped */
 .section a,
-.page a:not(.nav-brand),
-.hero a,
+.page a:not(.nav-brand):not(.btn),
+.hero a:not(.btn),
 .footer-links a {
   color: var(--primary);
 }
 
 .section a:hover,
-.page a:not(.nav-brand):hover,
-.hero a:hover {
+.page a:not(.nav-brand):not(.btn):hover,
+.hero a:not(.btn):hover {
   color: var(--primary-dark);
 }
 
