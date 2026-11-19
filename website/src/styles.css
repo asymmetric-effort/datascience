@@ -286,12 +286,12 @@ tr:hover {
   font-size: 14px;
 }
 
-/* Links */
-a {
+/* Links — exclude nav which has its own styling */
+a:not(.nav-brand):not(.nav-links a) {
   color: var(--primary);
 }
 
-a:hover {
+a:not(.nav-brand):not(.nav-links a):hover {
   color: var(--primary-dark);
 }
 
