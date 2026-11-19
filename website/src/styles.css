@@ -210,6 +210,7 @@ main {
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 5px;
 }
 
 .badge {
@@ -220,6 +221,50 @@ main {
   font-size: 13px;
   font-weight: 500;
   color: var(--primary);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+.btn-secondary {
+  background: var(--bg-muted);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+  color: var(--text);
+  text-decoration: none;
 }
 
 /* Sections */
