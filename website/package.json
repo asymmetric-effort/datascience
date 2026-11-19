@@ -1,6 +1,6 @@
 {
   "name": "datascience-website",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "datascience.asymmetric-effort.com project website",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
   "author": "Asymmetric Effort, LLC",
   "license": "MIT",
   "dependencies": {
-    "@asymmetric-effort/specifyjs": "^1.1.0"
+    "@asymmetric-effort/specifyjs": "^1.2.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",
