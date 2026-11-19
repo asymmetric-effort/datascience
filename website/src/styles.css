@@ -26,6 +26,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 #app {
@@ -291,4 +292,162 @@ a {
 
 a:hover {
   color: var(--primary-dark);
+}
+
+/* Hamburger toggle — hidden on desktop */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 1.25rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  line-height: 1;
+  margin-left: auto;
+}
+
+.nav-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ---- Tablet (≤768px) ---- */
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: block;
+  }
+
+  .nav-inner {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-brand {
+    font-size: 1rem;
+    min-width: 0;
+  }
+
+  .nav-brand-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.5rem;
+  }
+
+  .nav-links-open {
+    display: flex;
+  }
+
+  .nav-links a {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .hero-logo {
+    width: 80px;
+    height: 80px;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---- Mobile (≤480px) ---- */
+@media (max-width: 480px) {
+  .nav-inner {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .nav-brand {
+    font-size: 0.85rem;
+    gap: 0.35rem;
+  }
+
+  .nav-brand img {
+    height: 22px;
+    width: 22px;
+    max-height: 22px;
+    max-width: 22px;
+  }
+
+  main {
+    padding: 16px 12px;
+  }
+
+  .hero {
+    padding: 24px 0;
+  }
+
+  .hero h1 {
+    font-size: 22px;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+  }
+
+  .hero-logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .badges {
+    gap: 6px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .page h1 {
+    font-size: 24px;
+  }
+
+  .section h2 {
+    font-size: 20px;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-links {
+    justify-content: center;
+  }
 }
